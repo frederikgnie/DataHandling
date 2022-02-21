@@ -1,13 +1,13 @@
 
 #%%
-store="/home/au643300/DataHandling/data/interim/data.zarr"
+store="/home/au569913/DataHandling/data/interim/data.zarr"
 import glob
 from hashlib import new
 import os
 import numpy as np
 import xarray as xr
 
-raw = "/home/au643300/DataHandling/data/raw/"
+raw = "/home/au569913/DataHandling/data/raw/"
 
 files = glob.glob(raw + '*.u')
 files = sorted(files)

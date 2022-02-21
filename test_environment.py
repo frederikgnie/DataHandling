@@ -1,3 +1,4 @@
+"""Script that ensures the Python is the correct version """
 import sys
 
 REQUIRED_PYTHON = "python3"

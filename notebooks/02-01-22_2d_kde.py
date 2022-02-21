@@ -28,7 +28,7 @@ overwrite=False
 overwrite_pics=True
 
 
-path_of_output="/home/au643300/DataHandling/models/output"
+path_of_output="/home/au569913/DataHandling/models/output"
 name_list, _ = utility.get_runs_wandb()
 
 #slurm_arrary_id = int(os.getenv('SLURM_ARRAY_TASK_ID'))

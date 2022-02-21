@@ -1,9 +1,9 @@
 
-def append_tozarr(store="/home/au643300/DataHandling/data/interim/data.zarr"):
+def append_tozarr(store="/home/au569913/DataHandling/data/interim/data.zarr"):
     """appends new u files or creates a new zarr  array
 
     Args:
-        store (Path, optional): where to put the zarr array. Defaults to "/home/au643300/DataHandling/data/interim/data.zarr".
+        store (Path, optional): where to put the zarr array. Defaults to "/home/au569913/DataHandling/data/interim/data.zarr".
 
     Returns:
         None: 
@@ -13,7 +13,7 @@ def append_tozarr(store="/home/au643300/DataHandling/data/interim/data.zarr"):
     import numpy as np
     import xarray as xr
 
-    raw = "/home/au643300/DataHandling/data/raw/"
+    raw = "/home/au569913/DataHandling/data/raw/"
 
     files = glob.glob(raw + '*.u')
     files = sorted(files)
@@ -57,11 +57,11 @@ def append_tozarr(store="/home/au643300/DataHandling/data/interim/data.zarr"):
     return None
 
 
-def netcdf_save(interim="/home/au643300/NOBACKUP/data/interim/snapshots/"):
+def netcdf_save(interim="/home/au569913/NOBACKUP/data/interim/snapshots/"):
     """LEGACY Saves .u files to netcdf files
 
     Args:
-        interim (str, optional): the default save location. Defaults to "/home/au643300/NOBACKUP/data/interim/snapshots/".
+        interim (str, optional): the default save location. Defaults to "/home/au569913/NOBACKUP/data/interim/snapshots/".
     """
 
     import glob
@@ -70,7 +70,7 @@ def netcdf_save(interim="/home/au643300/NOBACKUP/data/interim/snapshots/"):
     import numpy as np
     import xarray as xr
 
-    raw = "/home/au643300/DataHandling/data/raw/"
+    raw = "/home/au569913/DataHandling/data/raw/"
 
     #%%
     raw_files = glob.glob(raw + '*.u')
@@ -106,7 +106,7 @@ def netcdf_save(interim="/home/au643300/NOBACKUP/data/interim/snapshots/"):
     return None
 
 
-def to_xarr(file_path):
+def to_xarr(file_path, incscalars=False):
     """takes an path to an u file and converts it to xarr
 
     Args:
@@ -127,24 +127,38 @@ def to_xarr(file_path):
 
     xf = xf[:-1]
     zf = zf[:-1]
-    ds = xr.Dataset(
-        {
-            "u_vel": (['x', 'y', 'z'], quantities[0]),
-            "v_vel": (['x', 'y', 'z'], quantities[1]),
-            "w_vel": (['x', 'y', 'z'], quantities[2]),
-            "pr1": (['x', 'y', 'z'], quantities[3]),
-            "pr0.71": (['x', 'y', 'z'], quantities[4]),
-            "pr0.2": (['x', 'y', 'z'], quantities[5]),
-            "pr0.025": (['x', 'y', 'z'], quantities[6]),
-        },
-        coords={
-            "x": (["x"], xf),
-            "y": (["y"], yf),
-            "z": (["z"], zf),
-            "time": length[2],
-        },
-
-    )
+    if incscalars == False:
+        ds = xr.Dataset(
+            {
+                "u_vel": (['x', 'y', 'z'], quantities[0]),
+                "v_vel": (['x', 'y', 'z'], quantities[1]),
+                "w_vel": (['x', 'y', 'z'], quantities[2]),
+            },
+            coords={
+                "x": (["x"], xf),
+                "y": (["y"], yf),
+                "z": (["z"], zf),
+                "time": length[2],
+            },
+        )
+    else:
+        ds = xr.Dataset(
+            {
+                "u_vel": (['x', 'y', 'z'], quantities[0]),
+                "v_vel": (['x', 'y', 'z'], quantities[1]),
+                "w_vel": (['x', 'y', 'z'], quantities[2]),
+                "pr1": (['x', 'y', 'z'], quantities[3]),
+                "pr0.71": (['x', 'y', 'z'], quantities[4]),
+                "pr0.2": (['x', 'y', 'z'], quantities[5]),
+                "pr0.025": (['x', 'y', 'z'], quantities[6]),
+            },
+            coords={
+                "x": (["x"], xf),
+                "y": (["y"], yf),
+                "z": (["z"], zf),
+                "time": length[2],
+            },
+        )
     # Saving the files as netcdf files
     # print('saved'+file_path[-12:-1])
     # ds.to_netcdf(save_path + file_path[-12:-1] + 'nc', engine='netcdf4')
@@ -156,7 +170,7 @@ def to_xarr(file_path):
 
 
 
-def readDNSdata(inputfilename, onlyU=False):
+def readDNSdata(inputfilename, incscalars=False):
     from numba import jit
     """
     Function used to read the raw field* files into python
@@ -209,8 +223,8 @@ def readDNSdata(inputfilename, onlyU=False):
         Nz = shape[1] + 1
         Ny = shape[2]
 
-        if onlyU == True:
-            ncomp = 1
+        if incscalars == False:
+            ncomp = 3
         else:
             ncomp = 7
         NNx = Nx
@@ -240,7 +254,8 @@ def readDNSdata(inputfilename, onlyU=False):
 
 
     # inputfilename = 'end.uu'
-    scalar = 4
+    #scalar = 4 
+    scalar = 0
 
     import numpy as np
 
@@ -262,7 +277,7 @@ def readDNSdata(inputfilename, onlyU=False):
         discard = np.fromfile(fid, np.int32, count=2)
 
         flowtype = np.fromfile(fid, np.int32, count=1)
-        dstar = np.fromfile(fid, np.float64, count=1)
+        dstar = np.fromfile(fid, np.float64, count=1)   
         discard = np.fromfile(fid, np.int32, count=1)
 
         paraString = 'Re: ' + str(Re[0]) + ', Flowtype: ' + str(flowtype[0]) \
@@ -284,9 +299,9 @@ def readDNSdata(inputfilename, onlyU=False):
         # Reading fields:
 
         rlu, ilu = readFields('u')
-        if onlyU == False:
-            rlv, ilv = readFields('v')
-            rlw, ilw = readFields('w')
+        rlv, ilv = readFields('v')
+        rlw, ilw = readFields('w')
+        if incscalars == True:
             rls1, ils1 = readFields('s1')
             rls2, ils2 = readFields('s2')
             rls3, ils3 = readFields('s3')
@@ -335,9 +350,9 @@ def readDNSdata(inputfilename, onlyU=False):
 
         for i in range(NNx):
             rlu[i, k, :], ilu[i, k, :] = transformComplex(rlu[i, k, :], ilu[i, k, :], ca[i], sa[i])
-            if onlyU == False:
-                rlv[i, k, :], ilv[i, k, :] = transformComplex(rlv[i, k, :], ilv[i, k, :], ca[i], sa[i])
-                rlw[i, k, :], ilw[i, k, :] = transformComplex(rlw[i, k, :], ilw[i, k, :], ca[i], sa[i])
+            rlv[i, k, :], ilv[i, k, :] = transformComplex(rlv[i, k, :], ilv[i, k, :], ca[i], sa[i])
+            rlw[i, k, :], ilw[i, k, :] = transformComplex(rlw[i, k, :], ilw[i, k, :], ca[i], sa[i])
+            if incscalars == True:
                 rls1[i, k, :], ils1[i, k, :] = transformComplex(rls1[i, k, :], ils1[i, k, :], ca[i], sa[i])
                 rls2[i, k, :], ils2[i, k, :] = transformComplex(rls2[i, k, :], ils2[i, k, :], ca[i], sa[i])
                 rls3[i, k, :], ils3[i, k, :] = transformComplex(rls3[i, k, :], ils3[i, k, :], ca[i], sa[i])
@@ -348,44 +363,49 @@ def readDNSdata(inputfilename, onlyU=False):
     # print('reshaping...')
 
     u = complexReshape(rlu, ilu)
-    if onlyU == True:
-        vel = np.concatenate((u[:, :int(NNz / 2), :], u[:, (int(NNz / 2) + 1):, :]), axis=1)
-        velOut = vel
-    if onlyU == False:
-        v = complexReshape(rlv, ilv)
-        w = complexReshape(rlw, ilw)
+    v = complexReshape(rlv, ilv)
+    w = complexReshape(rlw, ilw)
+    if incscalars == False:
+        vel = np.stack((u, v, w), axis=-1)
+    if incscalars == True:
         s1 = complexReshape(rls1, ils1)
         s2 = complexReshape(rls2, ils2)
         s3 = complexReshape(rls3, ils3)
         s4 = complexReshape(rls4, ils4)
-
         vel = np.stack((u, v, w, s1, s2, s3, s4), axis=-1)
-        vel = np.concatenate((vel[:, :int(NNz / 2), :], vel[:, (int(NNz / 2) + 1):, :]), axis=1)
-        res = vel[:, :, :, 0]
+
+    vel = np.concatenate((vel[:, :int(NNz / 2), :], vel[:, (int(NNz / 2) + 1):, :]), axis=1)
+    res = vel[:, :, :, 0]
+
+    if incscalars == False:
+        for i in range(3-1):
+            res = np.concatenate((res, vel[:, :, :, i + 1]), axis=2)
+    else:
         for i in range(7 - 1):
             res = np.concatenate((res, vel[:, :, :, i + 1]), axis=2)
 
-        velOut = res
+    velOut = res
 
     # Convert to physcal space
     phys, NNx, NNy, NNz = fou2phys(velOut)
 
     # Decouple fields
     u = phys[:, :, int(0 * NNy):int(1 * NNy)]
+    v = phys[:, :, int(1 * NNy):int(2 * NNy)]
+    w = phys[:, :, int(2 * NNy):int(3 * NNy)]
     u = np.moveaxis(u, [1, 2], [2, 1])
-    if onlyU == True:
-        quanList = 'u'
-        quantities = u
-    if onlyU == False:
-        v = phys[:, :, int(1 * NNy):int(2 * NNy)]
-        w = phys[:, :, int(2 * NNy):int(3 * NNy)]
+    v = np.moveaxis(v, [1, 2], [2, 1])
+    w = np.moveaxis(w, [1, 2], [2, 1])
+
+    if incscalars == False:
+        quanList = ['u', 'v', 'w']
+        quantities = [u, v, w]
+    if incscalars == True:
         s1 = phys[:, :, int(3 * NNy):int(4 * NNy)]
         s2 = phys[:, :, int(4 * NNy):int(5 * NNy)]
         s3 = phys[:, :, int(5 * NNy):int(6 * NNy)]
         s4 = phys[:, :, int(6 * NNy):int(7 * NNy)]
-
-        v = np.moveaxis(v, [1, 2], [2, 1])
-        w = np.moveaxis(w, [1, 2], [2, 1])
+        
         s1 = np.moveaxis(s1, [1, 2], [2, 1])
         s2 = np.moveaxis(s2, [1, 2], [2, 1])
         s3 = np.moveaxis(s3, [1, 2], [2, 1])
