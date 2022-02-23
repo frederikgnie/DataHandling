@@ -7,7 +7,7 @@
 
 
 
-from DataHandling.features import slices
+from DataHandling.features import slices, preprocess
 import xarray as xr
 
 
@@ -16,9 +16,15 @@ df=xr.open_zarr("/home/au569913/DataHandling/data/interim/data.zarr")
 
 
 
-var=['u_vel']
-target=['tau_wall']
+#var=['u_vel']
+#target=['tau_wall']
+#normalized=False
+#y_plus=15
+#slices.save_tf(y_plus,var,target,df,normalized=normalized)
+
+var=['u_vel','v_vel','w_vel']
+target=['u_vel','v_vel','w_vel']
 normalized=False
 y_plus=15
-slices.save_tf(y_plus,var,target,df,normalized=normalized)
+preprocess.save_tf(y_plus,var,target,df,normalized=normalized)
 
