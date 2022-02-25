@@ -34,7 +34,7 @@ patience=50
 #var=['u_vel','v_vel','w_vel','pr0.71']
 #target=['pr0.71_flux']
 var=['u_vel','v_vel','w_vel']
-target['u_vel','v_vel','w_vel']
+target=['u_vel','v_vel','w_vel']
 normalized=False
 dropout=False
 skip=4

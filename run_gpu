@@ -28,4 +28,4 @@ conda activate tf_gpu
 #srun python3 -u /home/au569913/DataHandling/notebooks/16-12-21_final_model_no_sep.py
 #srun python3 -u /home/au569913/DataHandling/notebooks/16-12-21_super_deep.py
 #srun python3 -u /home/au569913/DataHandling/notebooks/17-12-21_fukiama_model_also_heat.py
-srun python3 -u /home/au569913/DataHandling/notebooks/17-12-21_final_model_no_sep_heat.py
+srun python3 -u /home/au569913/DataHandling/notebooks/Refractored/17-12-21_final_model_no_sep_heat.py
