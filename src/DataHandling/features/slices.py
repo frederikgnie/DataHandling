@@ -42,10 +42,12 @@ def read_tfrecords(serial_data,format,target):
     Returns:
         tuple: tuple of (features,labels)
     """
+    print('read_tfrecord - v2')
     import tensorflow as tf
       
     features=tf.io.parse_single_example(serial_data, format)
-
+    
+    
     dict_for_dataset={}
 
     #Loops through the features and saves them into a dict
@@ -55,14 +57,21 @@ def read_tfrecords(serial_data,format,target):
         else:
             print("only arrays have been implemented")
     
-
-    target_array=dict_for_dataset[target[0]]
-
+    #dict_for_target={target[0]:dict_for_dataset[target[0]],target[1]:dict_for_dataset[target[1]],target[2]:dict_for_dataset[target[2]]}
+    dict_for_target=tf.stack([dict_for_dataset[target[0]],dict_for_dataset[target[1]],dict_for_dataset[target[2]]],axis=3)
+    
+    #target_array=dict_for_dataset[target[0]] #initially with only 1 target
+    #target_array1=dict_for_dataset[target[0]]
+    #target_array2=dict_for_dataset[target[1]]
+    #target_array3=dict_for_dataset[target[2]]
+    
     #Removes the target from the dict
-    dict_for_dataset.pop(target[0])
+    #dict_for_dataset.pop(target[0])
+    for i in target:
+        dict_for_dataset.pop(i)
 
      
-    return (dict_for_dataset,target_array)
+    return (dict_for_dataset,dict_for_target)
 
 
 
@@ -174,14 +183,13 @@ def load_validation(y_plus,var,target,normalized):
     shutil.copy2(os.path.join(save_loc,'train'),data_loc)
     dataset = tf.data.TFRecordDataset([data_loc],compression_type='GZIP',buffer_size=100,num_parallel_reads=tf.data.experimental.AUTOTUNE)
     dataset=dataset.map(lambda x: read_tfrecords(x,features_dict,target),num_parallel_calls=tf.data.experimental.AUTOTUNE)
-    dataset=dataset.batch(len_data_val)
+    len_data_train=len(list(dataset)) #new line added
+    dataset=dataset.batch(len_data_train)  #changed from len_data_val, which must be a bug!
     #dataset=dataset.batch(10)
-    dataset=dataset.take(1)
+    dataset=dataset.take(1) 
     for i in dataset:
         dataset=i
     data_unorder.append(dataset)    
-    
-    
     
     #test
     data_loc=os.path.join(scratch,'test')

@@ -38,20 +38,21 @@ def predict(model_name,overwrite,model,y_plus,var,target,normalized):
         feature_list=[]
         target_list=[]
 
-        for data_type in data:
+        for data_type in data: #data_type: train, val, test 
 
             feature_list.append(data_type[0])
 
-            target_list.append(data_type[1].numpy())
-
+            target_list.append(data_type[1].numpy()) #turns tf.tensor to numpy array
+            
         predctions=[]
 
+        print('Predicting now')
         predctions.append(model.predict(feature_list[0]))
         predctions.append(model.predict(feature_list[1]))
         predctions.append(model.predict(feature_list[2]))
 
         predctions=[np.squeeze(x,axis=3) for x in predctions]
-
+        print('Saving compressed arrays')
         np.savez_compressed(os.path.join(output_path,"predictions"),train=predctions[0],val=predctions[1],test=predctions[2])
         np.savez_compressed(os.path.join(output_path,"targets"),train=target_list[0],val=target_list[1],test=target_list[2])
 

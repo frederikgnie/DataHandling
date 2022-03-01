@@ -16,10 +16,14 @@ from DataHandling.models import models
 
 os.environ['WANDB_DISABLE_CODE']='True'
 
+wandbnotes = "Nakamura model with tf_record ('u_tar' target)"
+
+
 y_plus=15
 repeat=3
 shuffle=100
-batch_size=10
+#batch_size=10
+batch_size=100
 activation='elu'
 optimizer="adam"
 loss='mean_squared_error'
@@ -27,7 +31,8 @@ patience=50
 #var=['u_vel','v_vel','w_vel','pr0.71']
 #target=['pr0.71_flux']
 var=['u_vel','v_vel','w_vel']
-target=['u_vel','v_vel','w_vel']
+target=['u_tar','v_tar','w_tar']
+loss_dict={target[0]:'mean_squared_error',target[1]:'mean_squared_error',target[2]:'mean_squared_error'}
 normalized=False
 dropout=False
 skip=4
@@ -39,25 +44,25 @@ train=data[0]
 validation=data[1]
 
 #%%
-#Load data from xarray 
-import xarray as xr
-ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/data.zarr")
-ds=ds.isel(y=slice(0, 32)) #Reduce y-dim from 65 to 32 as done by nakamura
-train_ind, validation_ind, test_ind = preprocess.split_test_train_val(ds) #find indexes
-train = ds.isel(time = train_ind)
-validation = ds.isel(time = validation_ind)
-test = ds.isel(time = train_ind)
+#Load data from xarray approach:
+#import xarray as xr
+#ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/data.zarr")
+#ds=ds.isel(y=slice(0, 32)) #Reduce y-dim from 65 to 32 as done by nakamura
+#train_ind, validation_ind, test_ind = preprocess.split_test_train_val(ds) #find indexes
+#train = ds.isel(time = train_ind)
+#validation = ds.isel(time = validation_ind)
+#test = ds.isel(time = train_ind)
+#
+##Convert to np array
+#train=np.stack((train['u_vel'].values,train['v_vel'].values,train['w_vel']),axis=-1) #use values to pick data as np array and stack that shit
+#validation = np.stack((validation['u_vel'].values,validation['v_vel'].values,validation['w_vel']),axis=-1)
 
-#Convert to np array
-train=np.stack((train['u_vel'].values,train['v_vel'].values,train['w_vel']),axis=-1) #use values to pick data as np array and stack that shit
-validation = np.stack((validation['u_vel'].values,validation['v_vel'].values,validation['w_vel']),axis=-1)
 #%% Model
-model=models.nakamura(var,activation)
+model=models.nakamura(var,target,activation)
 model.summary()
-model.compile(loss=loss, optimizer=optimizer)
-model.fit(x=train,epochs=10,validation_data=validation)
+
 #%% Initialise WandB & run
-wandb.init(project="Thesis",notes="Nakamura model with np array input")
+wandb.init(project="Thesis",notes=wandbnotes)
 
 config=wandb.config
 config.y_plus=y_plus
@@ -69,7 +74,7 @@ config.optimizer=optimizer
 config.loss=loss
 config.patience=patience
 config.variables=var
-config.target=target[0]
+config.target=target
 config.dropout=dropout
 config.normalized=normalized
 config.skip=skip
@@ -83,9 +88,11 @@ logdir, backupdir= utility.get_run_dir(wandb.run.name)
 backup_cb=tf.keras.callbacks.ModelCheckpoint(os.path.join(backupdir,'weights.{epoch:02d}'),save_best_only=False)
 early_stopping_cb = keras.callbacks.EarlyStopping(patience=patience,restore_best_weights=True)
 #Model fit
-#original
-#model.fit(x=train,epochs=100000,validation_data=validation,callbacks=[WandbCallback(),early_stopping_cb,backup_cb])
+#original , epochs=10000
+model.fit(x=train,epochs=10,validation_data=validation,callbacks=[WandbCallback(),early_stopping_cb,backup_cb])
+
 #fgn version which utlisized format of xarray to np array
-#model.fit(x=train,y=train,epochs=10,validation_data=[validation, validation])
+#model.fit(x=train,y=train,epochs=10,validation_data=[validation, validation],callbacks=[WandbCallback(),early_stopping_cb,backup_cb])
 #Model save
 model.save(os.path.join("/home/au569913/DataHandling/models/trained",wandb.run.name))
+print('Finished nakamura.py')
