@@ -918,3 +918,71 @@ def stat_plots(mean_dataset_loc,batches):
     plt.tight_layout()
     plt.savefig("/home/au569913/DataHandling/reports/figures/Pr_val.pdf", bbox_inches='tight')
 
+
+
+
+#--- fgn --#
+def uslice(predctions,target_list,output_path,ds,dim):
+    """"2D u velocity slice plot
+
+    Args:
+        predctions (list): list of the train,validation,test predictions
+        target_list (list): list of the train,validation,test target
+        names (list): list of the names of the data. Normally train,validaiton,test
+        output_path (Path): Path of where to save the figures
+        ds (xrray)
+        dim (str): dimension to slice
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.collections import LineCollection
+    import seaborn as sns
+    import xarray as xr
+    import numpy as np
+    sns.set_theme()
+    sns.set_style("ticks")
+    sns.set_context("paper")
+    ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/data.zarr")
+    ds=ds.isel(y=slice(0, 32))
+    x, y = np.meshgrid(ds['x'].values, ds['y'].values)
+    #plt.scatter(x, y,0.1)
+    #segs1 = np.stack((x,y), axis=2)
+    #segs2 = segs1.transpose(1,0,2)
+    #plt.gca().add_collection(LineCollection(segs1))
+    #plt.gca().add_collection(LineCollection(segs2))
+
+    time = 100
+    #z = ds.isel(time=200,z=16)['u_vel'].values.T
+    if dim == 'y':
+        z1 = target_list[2][time,:,:,16,0].T
+        z2 = predctions[2][time,:,:,16,0].T
+    if dim == 'z':
+        z1 = target_list[2][time,:,16,:,0].T
+        z2 = predctions[2][time,:,16,:,0].T
+
+    cm = 1/2.54  # centimeters in inches
+    name='test'
+
+    fig, axs=plt.subplots(2,figsize=([7*cm,10*cm]),sharex=True,sharey=True,constrained_layout=False,dpi=1000)
+    #Target
+    pcm=axs[0].contourf(x,y,z1,levels=100,cmap='jet')
+    axs[0].set_title(name.capitalize(),weight="bold")
+    axs[0].set_ylabel(r'$z$')
+
+    #prediction
+    axs[1].contourf(x,y,z2,levels=100,cmap='jet')
+    axs[1].set_xlabel(r'$x$')
+    axs[1].set_ylabel(r'$z$')
+
+    #Setting labels and stuff
+    axs[0].text(-0.42, 0.20, 'Target',
+            verticalalignment='bottom', horizontalalignment='right',
+            transform=axs[0].transAxes,rotation=90,weight="bold")
+    axs[1].text(-0.42, 0.00, 'Prediction',
+            verticalalignment='bottom', horizontalalignment='right',
+            transform=axs[1].transAxes,rotation=90,weight="bold")
+    fig.subplots_adjust(wspace=-0.31,hspace=0.25)
+    cbar=fig.colorbar(pcm,ax=axs[:],aspect=20,shrink=1.0,location="bottom",pad=0.22)
+    cbar.formatter.set_powerlimits((0, 0))
+    cbar.set_ticks([0.2, 0.4, 0.6, 0.8]), cbar.set_ticklabels([0.2, 0.4, 0.6, 0.8])
+    cbar.ax.set_xlabel(r'$u_{vel} $',rotation=0)
+    plt.show()

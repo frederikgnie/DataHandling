@@ -110,6 +110,9 @@ def save_tf(y_plus,var,target,data,normalized=False):
     #//fgn: trying without appending the "target" as doing autoencoder
     #append the target
     #var.append(target[0])
+    
+    for i,j in enumerate(target): 
+        var.append(j)
 
 
 
@@ -158,11 +161,16 @@ def save_tf(y_plus,var,target,data,normalized=False):
     
     #Dont slice //fgn
     wall_1 = data
+    wall_1[target[0]] = wall_1[var[0]]
+    wall_1[target[1]] = wall_1[var[1]]
+    wall_1[target[2]] = wall_1[var[2]]
+    wall_1=wall_1[var] # Picks out only var + target lidt e.g. u_vel & tau_wall
 
+    #Slice
     #wall_1=slice_array.sel(y=utility.y_plus_to_y(y_plus),method="nearest")
     #wall_1[target[0]]=target_slice1 
-    #wall_1=wall_1[var] # 'var' list der også indeholder target
-
+    #wall_1=wall_1[var] # Picks out only var + target lidt e.g. u_vel & tau_wall
+    
     #wall_2=slice_array.sel(y=utility.y_plus_to_y(other_wall_y_plus),method="nearest")
     #wall_2[target[0]]=target_slice2
     #wall_2=wall_2[var]
@@ -185,8 +193,8 @@ def save_tf(y_plus,var,target,data,normalized=False):
         shutil.rmtree(save_loc)           
         os.makedirs(save_loc)
 
-
     options = tf.io.TFRecordOptions(compression_type="GZIP")
+    
     with tf.io.TFRecordWriter(os.path.join(save_loc,'train'),options) as writer:
         print('train',flush=True)
         for i in train_1:
@@ -263,6 +271,7 @@ def split_test_train_val(slice_array,test_split=0.1,validation_split=0.2):
     Returns:
         tuple: returns the selected indices for the train, validation,test split
     """
+    
     num_snapshots=len(slice_array['time'])
     train=np.arange(0,num_snapshots)
     validation=np.random.choice(train,size=int(num_snapshots*validation_split),replace=False)
@@ -270,4 +279,7 @@ def split_test_train_val(slice_array,test_split=0.1,validation_split=0.2):
     test=np.random.choice(train,size=int(num_snapshots*test_split),replace=False)
     train=np.setdiff1d(train,test)
     np.random.shuffle(train)
+    np.save("/home/au569913/DataHandling/data/interim/train_ind",train)
+    np.save("/home/au569913/DataHandling/data/interim/valid_ind",validation)
+    np.save("/home/au569913/DataHandling/data/interim/test_ind",test)
     return train, validation, test

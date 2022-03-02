@@ -46,12 +46,12 @@ def predict(model_name,overwrite,model,y_plus,var,target,normalized):
             
         predctions=[]
 
-        print('Predicting now')
+        print('<---Predicting now--->')
         predctions.append(model.predict(feature_list[0]))
         predctions.append(model.predict(feature_list[1]))
         predctions.append(model.predict(feature_list[2]))
 
-        predctions=[np.squeeze(x,axis=3) for x in predctions]
+        #predctions=[np.squeeze(x,axis=3) for x in predctions]
         print('Saving compressed arrays')
         np.savez_compressed(os.path.join(output_path,"predictions"),train=predctions[0],val=predctions[1],test=predctions[2])
         np.savez_compressed(os.path.join(output_path,"targets"),train=target_list[0],val=target_list[1],test=target_list[2])
