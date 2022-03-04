@@ -17,7 +17,7 @@ from DataHandling.models import predict
 #%%
 tf_records = False
 
-name="proud-shadow-26"
+name="good-resonance-27"
 overwrite=False
 vars=['u_vel','v_vel','w_vel']
 target = ['u_tar','v_tar','w_tar']

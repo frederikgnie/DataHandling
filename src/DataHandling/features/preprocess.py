@@ -283,3 +283,31 @@ def split_test_train_val(slice_array,test_split=0.1,validation_split=0.2):
     np.save("/home/au569913/DataHandling/data/interim/valid_ind",validation)
     np.save("/home/au569913/DataHandling/data/interim/test_ind",test)
     return train, validation, test
+
+def standardize(ds):
+    """Takes a xarray dataset and standardize
+
+    Args:
+        ds (xarray): dataset of type xarray
+
+    Returns:
+        ds (xarray): dataset of type xarray
+    """
+    ds=(ds-ds.mean(dim=('time','x','y','z')))/(ds.std(dim=('time','x','y','z')))
+    return ds
+
+def normalize(ds):
+    """Takes a xarray dataset and normalize
+
+    Args:
+        ds (xarray): dataset of type xarray
+
+    Returns:
+        ds (xarray): dataset of type xarray
+    """
+    ds=ds/ds.max()
+    return ds
+
+def fluc(ds):
+    ds=ds-ds.mean(dim=('x','y','z'))
+    return ds

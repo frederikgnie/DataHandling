@@ -986,3 +986,55 @@ def uslice(predctions,target_list,output_path,ds,dim):
     cbar.set_ticks([0.2, 0.4, 0.6, 0.8]), cbar.set_ticklabels([0.2, 0.4, 0.6, 0.8])
     cbar.ax.set_xlabel(r'$u_{vel} $',rotation=0)
     plt.show()
+
+def isocon(data,ds,name):
+    """"3D isocontour
+
+    Args:
+        ds (xarray): Xarray dataset for coordinates
+        data (nparray): nparray
+    """
+    import plotly.graph_objects as go
+    from scipy import interpolate
+    import numpy as np
+    # Data coordinates
+    #Create meshgrid
+    X, Y, Z = np.meshgrid(ds['x'].values, ds['y'].values, ds['z'].values)
+    #Convert to 32768,3
+    points = np.array((X.flatten(), Y.flatten(), Z.flatten())).T
+
+    # Data values @ above coords
+    values = data.flatten().T
+    x = ds['x'].values
+    y = ds['y'].values
+    z = ds['z'].values
+    # Grid to interp to
+    Xnew, Ynew, Znew = np.mgrid[x.min():x.max():32j, y.min():y.max():32j, z.min():z.max():32j]
+    # New data values on interp grid
+    newdata = interpolate.griddata(points, values, (Xnew,Ynew,Znew) )
+    print('Done')
+    
+    # make the plot
+    fig = go.Figure(data=[
+            go.Isosurface(x=X.flatten(),y=Y.flatten(),z=Z.flatten(),
+                       value=newdata.flatten(),
+                       opacity=0.8,
+                       isomin=0.01,
+                       isomax=0.01,
+                       surface_count=1,
+                       lighting=dict(ambient=0.7),
+                       colorscale='amp',
+                       showscale=False,
+                       caps=dict(x_show=False, y_show=False)
+                       ),
+            ])
+    # Default parameters which are used when `layout.scene.camera` is not provided
+    camera = dict(
+        up=dict(x=0.1, y=0.8, z=0.1),
+        center=dict(x=0, y=-0.5, z=0),
+        eye=dict(x=1.3, y=1, z=1.8)
+    )
+    fig.update_layout(scene_camera=camera, title=name)
+    fig.show()
+
+

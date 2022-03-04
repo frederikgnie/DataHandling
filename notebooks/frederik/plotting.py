@@ -1,6 +1,6 @@
 #%%
 import os
-from DataHandling import utility
+from DataHandling import plots, utility
 from DataHandling.features import slices
 import shutil
 import numpy as np
@@ -29,8 +29,37 @@ print(np.shape(target_list[0]))
 
 #%%
 import DataHandling
+from DataHandling import plots
 import importlib
-importlib.reload(DataHandling.plots)
-plots.uslice(predctions,target_list,'hej',ds,'z')
-# %%
+importlib.reload(plots)
+plots.uslice(predctions,target_list,'wheretosave',ds,'z')
 
+# %% plot figure
+import matplotlib.pyplot as plt
+uin = ds.u_vel.isel(time=200,z=16)
+fig = plt.figure()
+ax = fig.add_subplot(111)
+#air2d.T.plot(cmap='jet',vmin=0)
+uin.T.plot.contourf(ax=ax,levels=200,cmap='jet',vmin=0)
+ax.set_aspect('equal')
+
+# %%
+import xarray as xr
+ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/data.zarr")
+ds=ds.isel(y=slice(0, 32))
+
+
+# %%
+from DataHandling import postprocess
+from DataHandling import plots
+import importlib
+importlib.reload(postprocess)
+importlib.reload(plots)
+
+#data = ds['u_vel'][200].values #pick vel field
+#data = postprocess.Qcrit(target_list[2],ds,100) # Calc q-criterion
+#plots.isocon(data,ds,'Target')
+#data = postprocess.Qcrit(predctions[2],ds,100) # Calc q-criterion
+plots.isocon(data,ds,'Prediction')
+
+# %%

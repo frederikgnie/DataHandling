@@ -16,7 +16,7 @@ from DataHandling.models import models
 
 os.environ['WANDB_DISABLE_CODE']='True'
 
-wandbnotes = "Nakamura model with xarray - trying with predict"
+wandbnotes = "Nakamura, xarray, epochs=300"
 tf_records = False
 
 y_plus=15
@@ -93,7 +93,7 @@ if tf_records == True:
 
 #fgn version which utlisized format of xarray to np array
 if tf_records == False:
-    model.fit(x=train,y=train,epochs=10,validation_data=[validation, validation],callbacks=[WandbCallback(),early_stopping_cb,backup_cb])
+    model.fit(x=train,y=train,epochs=300,validation_data=[validation, validation],callbacks=[WandbCallback(),early_stopping_cb,backup_cb])
 #Model save
 model.save(os.path.join("/home/au569913/DataHandling/models/trained",wandb.run.name))
 print('Finished nakamura.py')

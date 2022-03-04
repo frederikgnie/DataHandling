@@ -158,4 +158,11 @@ def y_to_y_plus(y):
     y_plus=y*u_tau/nu
     return y_plus
 
+# fgn #
+def ds_to_np(ds,snapshot):
+    da = ds.copy()
+    da = da.to_array()
+    arry = da.isel(time=snapshot).values
+    arry = np.moveaxis(arry,0,-1)
+    return arry
 
