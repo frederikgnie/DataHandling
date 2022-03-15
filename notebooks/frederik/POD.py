@@ -1,4 +1,5 @@
 #%%
+from DataHandling.features import preprocess
 import xarray as xr
 import numpy as np
 #%%
@@ -76,3 +77,21 @@ plots.uslice(c[:,16,:,0].T,x_test[:,16,:,0].T,'d',ds,'POD')
 #%%
 #if shapshots is rows first should be transposed. Since my snapshots are coluns we do reverse.
 C = np.dot(array[:,0:n_snapshots], array[:,0:n_snapshots].T) / n_snapshots
+#%%
+r = 200
+ss = 4999
+# calculate first ss snapshots
+a = u[:,0:r].T @ array[:,0:ss] # calculate r weigths
+b = u[:,0:r] @ a # recontruct img with weights to eigenvectors
+c = b.T.reshape(ss,32,32,32,3) #fluctuations since no mean is added
+
+from DataHandling.features import preprocess
+import matplotlib.pyplot as plt
+rms_pred = preprocess.rms(c)
+rms_tar = preprocess.rms(array.T.reshape(4999,32,32,32,3)[0:ss,:,:,:,:])
+u_tau = 0.05
+y = ds.coords['y'].values
+plt.plot(y,rms_tar[:,0]/u_tau)
+plt.plot(y,rms_pred[:,0]/u_tau)
+#plt.plot(y,rms_tar[:,1])
+#plt.plot(y,rms_pred[:,1])

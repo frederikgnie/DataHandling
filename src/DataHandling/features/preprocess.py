@@ -308,6 +308,46 @@ def normalize(ds):
     ds=ds/ds.max()
     return ds
 
-def fluc(ds):
-    ds=ds-ds.mean(dim=('x','y','z'))
+def flucds(ds):
+    #ds=ds-ds.mean(dim=('x','y','z'))
+    ds=ds-ds.mean(dim=('time','x','z'))
     return ds
+
+def flucnp(array):
+    """Calculates fluctuation based on nparray.
+
+    Args:
+        array (nparray): 
+
+    Returns:
+        array (nparray): 
+    """
+    import numpy as np
+    import xarray as xr
+    #Nakamura approach - do whole 
+    #u_mean = array[:,:,:,:,0].mean(axis=3).mean(axis=0).mean(axis=0)
+    #v_mean = array[:,:,:,:,1].mean(axis=3).mean(axis=0).mean(axis=0)
+    #w_mean = array[:,:,:,:,2].mean(axis=3).mean(axis=0).mean(axis=0)
+
+    mean = array.mean(axis=3).mean(axis=0).mean(axis=0)
+
+    fluc = np.zeros(array.shape)
+    for i in range(32):
+        fluc[:,:,i,:,:] = array[:,:,i,:,:]-mean[i,:]
+    
+    return fluc
+
+def rms(fluc):
+    """Calculates rms of 3 vel componets w.r.t y axis
+
+    Args:
+        array (nparray): shape(time,x,y,z,vel)
+
+    Returns:
+        array (nparray): shape(y,ve)
+    """
+    import numpy as np
+    import xarray as xr
+    rms=np.sqrt(np.mean(fluc**2,axis=3).mean(axis=0).mean(axis=0))
+    return rms
+

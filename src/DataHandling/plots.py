@@ -958,6 +958,9 @@ def uslice(predctions,target_list,output_path,ds,dim):
     if dim == 'z':
         z1 = target_list[2][time,:,16,:,0].T
         z2 = predctions[2][time,:,16,:,0].T
+    if dim == 'POD':
+        z1 = target_list
+        z2 = predctions
 
     cm = 1/2.54  # centimeters in inches
     name='test'
@@ -1036,5 +1039,7 @@ def isocon(data,ds,name):
     )
     fig.update_layout(scene_camera=camera, title=name)
     fig.show()
+    #fig.write_image("/home/au569913/DataHandling/fig1.png")
+
 
 

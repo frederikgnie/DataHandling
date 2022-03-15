@@ -16,7 +16,7 @@ from DataHandling.models import models
 
 os.environ['WANDB_DISABLE_CODE']='True'
 
-wandbnotes = "Nakamura, xarray, epochs=300"
+wandbnotes = "Nakamura, elu, plus_fluctuations"
 tf_records = False
 
 y_plus=15
@@ -47,7 +47,13 @@ if tf_records == False:
     import xarray as xr
     ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/data.zarr")
     ds=ds.isel(y=slice(0, 32)) #Reduce y-dim from 65 to 32 as done by nakamura
-    train_ind, validation_ind, test_ind = preprocess.split_test_train_val(ds) #find indexes
+    u_tau = 0.05
+    ds = preprocess.flucds(ds)/u_tau
+    #train_ind, validation_ind, test_ind = preprocess.split_test_train_val(ds) #find indexes
+    train_ind=np.load("/home/au569913/DataHandling/data/interim/train_ind.npy")
+    validation_ind =np.load("/home/au569913/DataHandling/data/interim/valid_ind.npy")
+    test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+
     train = ds.isel(time = train_ind)
     validation = ds.isel(time = validation_ind)
     test = ds.isel(time = train_ind)
@@ -58,7 +64,7 @@ if tf_records == False:
 
 #%% Model
 model=models.nakamura(var,target,tf_records,activation)
-model.summary()
+
 
 #%% Initialise WandB & run
 wandb.init(project="Thesis",notes=wandbnotes)
@@ -86,6 +92,7 @@ logdir, backupdir= utility.get_run_dir(wandb.run.name)
 #Callbacks
 backup_cb=tf.keras.callbacks.ModelCheckpoint(os.path.join(backupdir,'weights.{epoch:02d}'),save_best_only=False)
 early_stopping_cb = keras.callbacks.EarlyStopping(patience=patience,restore_best_weights=True)
+
 #Model fit
 if tf_records == True:  
 #original , epochs=10000
@@ -94,6 +101,7 @@ if tf_records == True:
 #fgn version which utlisized format of xarray to np array
 if tf_records == False:
     model.fit(x=train,y=train,epochs=300,validation_data=[validation, validation],callbacks=[WandbCallback(),early_stopping_cb,backup_cb])
+
 #Model save
 model.save(os.path.join("/home/au569913/DataHandling/models/trained",wandb.run.name))
 print('Finished nakamura.py')

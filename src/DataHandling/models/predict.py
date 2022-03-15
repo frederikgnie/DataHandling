@@ -58,3 +58,54 @@ def predict(model_name,overwrite,model,y_plus,var,target,normalized):
 
 
         print("Saved data",flush=True)
+
+def predictxr(model_name, model):
+    """Uses a trained model to predict with. NEED TO BE RUN WHILE zarr IS CURRENT model
+
+    Args:
+        model_name (str): the namen given to the model by Wandb
+        overwrite (Bool): Overwrite existing data or not
+        model (object): the loaded model
+        normalized (Bool): If the model uses normalized data
+    """
+    #Load data from xarray
+    from DataHandling.features import preprocess 
+    import xarray as xr
+    from DataHandling import utility
+    import numpy as np
+    import os
+    ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/data.zarr")
+    ds=ds.isel(y=slice(0, 32)) #Reduce y-dim from 65 to 32 as done by nakamura
+    u_tau = 0.05
+    ds = preprocess.flucds(ds)/u_tau
+    #train_ind, validation_ind, test_ind = preprocess.split_test_train_val(ds) #find indexes
+    train_ind=np.load("/home/au569913/DataHandling/data/interim/train_ind.npy")
+    validation_ind =np.load("/home/au569913/DataHandling/data/interim/valid_ind.npy")
+    test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+    train = ds.isel(time = train_ind)
+    valid = ds.isel(time = validation_ind)
+    test = ds.isel(time = test_ind)
+
+    #Convert to np array
+    train_np=np.stack((train['u_vel'].values,train['v_vel'].values,train['w_vel']),axis=-1) #use values to pick data as np array and stack that shit
+    valid_np=np.stack((valid['u_vel'].values,valid['v_vel'].values,valid['w_vel']),axis=-1)
+    test_np=np.stack((test['u_vel'].values,test['v_vel'].values,test['w_vel']),axis=-1)
+    
+    #%% Predict
+    predctions=[]
+    print('<---Predicting now--->')
+    predctions.append(model.predict(train_np,verbose=1))
+    predctions.append(model.predict(valid_np,verbose=1))
+    predctions.append(model.predict(test_np,verbose=1))
+
+    #Using same targets as features
+    target_list = [train_np,valid_np,test_np]
+
+    print('Saving compressed arrays')
+    output_path ="/home/au569913/DataHandling/models/output/{}".format(model_name)
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
+    np.savez_compressed(os.path.join(output_path,"predictions"),train=predctions[0],val=predctions[1],test=predctions[2])
+    np.savez_compressed(os.path.join(output_path,"targets"),train=target_list[0],val=target_list[1],test=target_list[2])
+    print("Saved data",flush=True)
+    
