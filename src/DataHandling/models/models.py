@@ -426,7 +426,7 @@ def super_deep(input_features,activation='elu'):
     model = keras.Model(inputs=input_list, outputs=output)
     return model
 
-def nakamura(input_features, output_features, tf_records, activation='elu'):
+def nakamura(input_features, output_features, tf_records, activation='relu'):
     from tensorflow import keras
     import tensorflow as tf
     from keras.layers import Input, Add, Conv3D, MaxPooling3D, UpSampling3D, Reshape
@@ -454,27 +454,27 @@ def nakamura(input_features, output_features, tf_records, activation='elu'):
 
 
     #Multi-scale model (Du et al., 2018)
-    x1 = Conv3D(16, (3,3,3),activation='relu', padding='same')(input_img)
-    x1 = Conv3D(8, (3,3,3),activation='relu', padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(input_img)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
     x1 = MaxPooling3D((2,2,2),padding='same')(x1)
-    x1 = Conv3D(16, (3,3,3),activation='relu', padding='same')(x1)
-    x1 = Conv3D(8, (3,3,3),activation='relu', padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
     x1 = MaxPooling3D((2,2,2),padding='same')(x1)
     x1 = Conv3D(3, (3,3,3),activation='tanh', padding='same')(x1)
     
-    x2 = Conv3D(16, (5,5,5),activation='relu', padding='same')(input_img)
-    x2 = Conv3D(8, (5,5,5),activation='relu', padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(input_img)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
     x2 = MaxPooling3D((2,2,2),padding='same')(x2)
-    x2 = Conv3D(16, (5,5,5),activation='relu', padding='same')(x2)
-    x2 = Conv3D(8, (5,5,5),activation='relu', padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
     x2 = MaxPooling3D((2,2,2),padding='same')(x2)
     x2 = Conv3D(3, (5,5,5),activation='tanh', padding='same')(x2)
     
-    x3 = Conv3D(16, (7,7,7),activation='relu', padding='same')(input_img)
-    x3 = Conv3D(8, (7,7,7),activation='relu', padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(input_img)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
     x3 = MaxPooling3D((2,2,2),padding='same')(x3)
-    x3 = Conv3D(16, (7,7,7),activation='relu', padding='same')(x3)
-    x3 = Conv3D(8, (7,7,7),activation='relu', padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
     x3 = MaxPooling3D((2,2,2),padding='same')(x3)
     x3 = Conv3D(3, (7,7,7),activation='tanh', padding='same')(x3)
     
@@ -482,29 +482,267 @@ def nakamura(input_features, output_features, tf_records, activation='elu'):
     x_lnt = Reshape((1536,))(x) # For LSTM training
     x = Reshape((8,8,8,3))(x_lnt)
 
-    x1 = Conv3D(3, (3,3,3),activation='relu', padding='same')(x)
+    x1 = Conv3D(3, (3,3,3),activation=activation, padding='same')(x)
     x1 = UpSampling3D((2,2,2))(x1)
-    x1 = Conv3D(8, (3,3,3),activation='relu', padding='same')(x1)
-    x1 = Conv3D(16, (3,3,3),activation='relu', padding='same')(x1)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1)
     x1 = UpSampling3D((2,2,2))(x1)
-    x1 = Conv3D(8, (3,3,3),activation='relu', padding='same')(x1)
-    x1 = Conv3D(16, (3,3,3),activation='relu', padding='same')(x1)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1)
 
-    x2 = Conv3D(3, (5,5,5),activation='relu', padding='same')(x)
+    x2 = Conv3D(3, (5,5,5),activation=activation, padding='same')(x)
     x2 = UpSampling3D((2,2,2))(x2)
-    x2 = Conv3D(8, (5,5,5),activation='relu', padding='same')(x2)
-    x2 = Conv3D(16, (5,5,5),activation='relu', padding='same')(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
     x2 = UpSampling3D((2,2,2))(x2)
-    x2 = Conv3D(8, (5,5,5),activation='relu', padding='same')(x2)
-    x2 = Conv3D(16, (5,5,5),activation='relu', padding='same')(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
 
-    x3 = Conv3D(3, (7,7,7),activation='relu', padding='same')(x)
+    x3 = Conv3D(3, (7,7,7),activation=activation, padding='same')(x)
     x3 = UpSampling3D((2,2,2))(x3)
-    x3 = Conv3D(8, (7,7,7),activation='relu', padding='same')(x3)
-    x3 = Conv3D(16, (7,7,7),activation='relu', padding='same')(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
     x3 = UpSampling3D((2,2,2))(x3)
-    x3 = Conv3D(8, (7,7,7),activation='relu', padding='same')(x3)
-    x3 = Conv3D(16, (7,7,7),activation='relu', padding='same')(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
+
+    x = Add()([x1,x2,x3])
+    x_final = Conv3D(3, (3,3,3),padding='same')(x)
+    #x_final = output_img(x)
+    if tf_records == False:
+        autoencoder = Model(input_img, x_final) #original
+    #autoencoder = Model(inputs=input_list,outputs=output_list)
+    if tf_records == True:
+        #autoencoder = Model(inputs=input_list,outputs=output_list)
+        autoencoder = Model(inputs=input_list,outputs=x_final)
+
+    return autoencoder
+
+def nakamura4(input_features, output_features, tf_records, activation='relu'):
+    from tensorflow import keras
+    import tensorflow as tf
+    from keras.layers import Input, Add, Conv3D, MaxPooling3D, UpSampling3D, Reshape
+    from keras.models import Model
+
+    input_img = Input(shape=(32,32,32,3))
+    if tf_records == True:
+        input_list=[]
+        reshape_list=[]
+        for features in input_features:
+            input=keras.layers.Input(shape=(32,32,32),name=features)
+            input_list.append(input)
+            reshape=keras.layers.Reshape((32,32,32,1))(input)
+            reshape_list.append(reshape)
+        input_img=keras.layers.Concatenate()(reshape_list)
+
+    output_list=[]
+    reshape_list=[]
+    for features in output_features:
+        output=keras.layers.Input(shape=(32,32,32),name=features)
+        output_list.append(output)
+        reshape=keras.layers.Reshape((32,32,32,1))(output)
+        reshape_list.append(reshape)
+    output_img=keras.layers.Concatenate()(reshape_list)
+
+
+    #Multi-scale model (Du et al., 2018)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(input_img)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = MaxPooling3D((2,2,2),padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = MaxPooling3D((2,2,2),padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1) #4
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1) #4
+    x1 = MaxPooling3D((2,2,2),padding='same')(x1) #4
+    x1 = Conv3D(3, (3,3,3),activation='tanh', padding='same')(x1)
+    
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(input_img)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = MaxPooling3D((2,2,2),padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = MaxPooling3D((2,2,2),padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = MaxPooling3D((2,2,2),padding='same')(x2)
+    x2 = Conv3D(3, (5,5,5),activation='tanh', padding='same')(x2)
+    
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(input_img)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = MaxPooling3D((2,2,2),padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = MaxPooling3D((2,2,2),padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = MaxPooling3D((2,2,2),padding='same')(x3)
+    x3 = Conv3D(3, (7,7,7),activation='tanh', padding='same')(x3)
+    
+    x = Add()([x1,x2,x3])
+    x_lnt = Reshape((192,))(x) # For LSTM training
+    x = Reshape((4,4,4,3))(x_lnt)
+
+    x1 = Conv3D(3, (3,3,3),activation=activation, padding='same')(x)
+    x1 = UpSampling3D((2,2,2))(x1)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = UpSampling3D((2,2,2))(x1)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = UpSampling3D((2,2,2))(x1)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1)
+
+    x2 = Conv3D(3, (5,5,5),activation=activation, padding='same')(x)
+    x2 = UpSampling3D((2,2,2))(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = UpSampling3D((2,2,2))(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = UpSampling3D((2,2,2))(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
+
+    x3 = Conv3D(3, (7,7,7),activation=activation, padding='same')(x)
+    x3 = UpSampling3D((2,2,2))(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = UpSampling3D((2,2,2))(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = UpSampling3D((2,2,2))(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
+
+    x = Add()([x1,x2,x3])
+    x_final = Conv3D(3, (3,3,3),padding='same')(x)
+    #x_final = output_img(x)
+    if tf_records == False:
+        autoencoder = Model(input_img, x_final) #original
+    #autoencoder = Model(inputs=input_list,outputs=output_list)
+    if tf_records == True:
+        #autoencoder = Model(inputs=input_list,outputs=output_list)
+        autoencoder = Model(inputs=input_list,outputs=x_final)
+
+    return autoencoder
+
+def nakamura2(input_features, output_features, tf_records, activation='relu'):
+    from tensorflow import keras
+    import tensorflow as tf
+    from keras.layers import Input, Add, Conv3D, MaxPooling3D, UpSampling3D, Reshape
+    from keras.models import Model
+
+    input_img = Input(shape=(32,32,32,3))
+    if tf_records == True:
+        input_list=[]
+        reshape_list=[]
+        for features in input_features:
+            input=keras.layers.Input(shape=(32,32,32),name=features)
+            input_list.append(input)
+            reshape=keras.layers.Reshape((32,32,32,1))(input)
+            reshape_list.append(reshape)
+        input_img=keras.layers.Concatenate()(reshape_list)
+
+    output_list=[]
+    reshape_list=[]
+    for features in output_features:
+        output=keras.layers.Input(shape=(32,32,32),name=features)
+        output_list.append(output)
+        reshape=keras.layers.Reshape((32,32,32,1))(output)
+        reshape_list.append(reshape)
+    output_img=keras.layers.Concatenate()(reshape_list)
+
+
+    #Multi-scale model (Du et al., 2018)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(input_img)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = MaxPooling3D((2,2,2),padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = MaxPooling3D((2,2,2),padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1) #4
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1) #4
+    x1 = MaxPooling3D((2,2,2),padding='same')(x1) #4
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = MaxPooling3D((2,2,2),padding='same')(x1)
+    x1 = Conv3D(3, (3,3,3),activation='tanh', padding='same')(x1)
+    
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(input_img)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = MaxPooling3D((2,2,2),padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = MaxPooling3D((2,2,2),padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = MaxPooling3D((2,2,2),padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = MaxPooling3D((2,2,2),padding='same')(x2)
+    x2 = Conv3D(3, (5,5,5),activation='tanh', padding='same')(x2)
+    
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(input_img)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = MaxPooling3D((2,2,2),padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = MaxPooling3D((2,2,2),padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = MaxPooling3D((2,2,2),padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = MaxPooling3D((2,2,2),padding='same')(x3)
+    x3 = Conv3D(3, (7,7,7),activation='tanh', padding='same')(x3)
+    
+    x = Add()([x1,x2,x3])
+    x_lnt = Reshape((24,))(x) # For LSTM training
+    x = Reshape((2,2,2,3))(x_lnt)
+
+    x1 = Conv3D(3, (3,3,3),activation=activation, padding='same')(x)
+    x1 = UpSampling3D((2,2,2))(x1)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = UpSampling3D((2,2,2))(x1)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = UpSampling3D((2,2,2))(x1)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = UpSampling3D((2,2,2))(x1)
+    x1 = Conv3D(8, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(16, (3,3,3),activation=activation, padding='same')(x1)
+
+    x2 = Conv3D(3, (5,5,5),activation=activation, padding='same')(x)
+    x2 = UpSampling3D((2,2,2))(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = UpSampling3D((2,2,2))(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = UpSampling3D((2,2,2))(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = UpSampling3D((2,2,2))(x2)
+    x2 = Conv3D(8, (5,5,5),activation=activation, padding='same')(x2)
+    x2 = Conv3D(16, (5,5,5),activation=activation, padding='same')(x2)
+
+    x3 = Conv3D(3, (7,7,7),activation=activation, padding='same')(x)
+    x3 = UpSampling3D((2,2,2))(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = UpSampling3D((2,2,2))(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = UpSampling3D((2,2,2))(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = UpSampling3D((2,2,2))(x3)
+    x3 = Conv3D(8, (7,7,7),activation=activation, padding='same')(x3)
+    x3 = Conv3D(16, (7,7,7),activation=activation, padding='same')(x3)
 
     x = Add()([x1,x2,x3])
     x_final = Conv3D(3, (3,3,3),padding='same')(x)

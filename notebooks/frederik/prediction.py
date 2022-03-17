@@ -15,9 +15,9 @@ import shutil
 import pandas as pd
 import matplotlib.pyplot as plt
 from DataHandling.models import predict
-#%% Inputs
+#%% Inputs ###
 tf_records = False
-name="cosmic-feather-29"
+name="deep-leaf-32"
 model=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name))
 overwrite=False
 
@@ -26,7 +26,7 @@ target = ['u_tar','v_tar','w_tar']
 normalize=False
 y_plus=15
 
-latent = 8
+latent = 2
 
 
 #%% Thor style

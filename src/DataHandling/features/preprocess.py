@@ -309,7 +309,7 @@ def normalize(ds):
     return ds
 
 def flucds(ds):
-    #ds=ds-ds.mean(dim=('x','y','z'))
+    #ds=ds-ds.mean(dim=('x','y','z')) #frederik implementation
     ds=ds-ds.mean(dim=('time','x','z'))
     return ds
 
@@ -344,10 +344,38 @@ def rms(fluc):
         array (nparray): shape(time,x,y,z,vel)
 
     Returns:
-        array (nparray): shape(y,ve)
+        array (nparray): shape(y,vel)
     """
     import numpy as np
     import xarray as xr
     rms=np.sqrt(np.mean(fluc**2,axis=3).mean(axis=0).mean(axis=0))
     return rms
+
+def testforconv(ds_np,batch):
+    """Test for convergence of the simulation
+
+    Args:
+        ds (xarray): dataset of type xarray
+        batch (int): size of batch to test on
+
+    Returns:
+        ds (xarray): dataset of type xarray
+    """
+    import xarray as xr
+    import numpy as np
+    ds_np=flucnp(ds_np)
+    first = ds_np[0:batch,:,:,:,:]
+    last = ds_np[-batch:-1,:,:,:,:]
+    first = np.sqrt(np.mean(first**2,axis=3).mean(axis=0).mean(axis=0).mean(axis=0))
+    last = np.sqrt(np.mean(last**2,axis=3).mean(axis=0).mean(axis=0).mean(axis=0))
+
+    #ds approach
+    #ds = flucds(ds)
+    #first = ds.isel(time=slice(0,batch)).std(dim=('time','x','y','z'))
+    #last = ds.isel(time=slice(-batch,-1)).std(dim=('time','x','y','z'))
+    #first = first.load()
+    #last = last.load()
+    #first = [first.u_vel.values, first.v_vel.values, first.w_vel.values]
+    #last = [last.u_vel.values, last.v_vel.values, last.w_vel.values]
+    return first, last
 

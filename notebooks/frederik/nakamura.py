@@ -16,7 +16,7 @@ from DataHandling.models import models
 
 os.environ['WANDB_DISABLE_CODE']='True'
 
-wandbnotes = "Nakamura, elu, plus_fluctuations"
+wandbnotes = "Nakamura2, relu, plus_fluctuations"
 tf_records = False
 
 y_plus=15
@@ -24,7 +24,7 @@ repeat=3
 shuffle=100
 #batch_size=10
 batch_size=100
-activation='elu'
+activation='relu'
 optimizer="adam"
 loss='mean_squared_error'
 patience=50
@@ -63,7 +63,7 @@ if tf_records == False:
     validation = np.stack((validation['u_vel'].values,validation['v_vel'].values,validation['w_vel']),axis=-1)
 
 #%% Model
-model=models.nakamura(var,target,tf_records,activation)
+model=models.nakamura2(var,target,tf_records,activation)
 
 
 #%% Initialise WandB & run

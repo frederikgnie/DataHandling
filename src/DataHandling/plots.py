@@ -1040,6 +1040,61 @@ def isocon(data,ds,name):
     fig.update_layout(scene_camera=camera, title=name)
     fig.show()
     #fig.write_image("/home/au569913/DataHandling/fig1.png")
+#%%
+def rmsplot(model,target,pred1,pred2,pred3,ds):
+    from DataHandling.features import preprocess
+    import matplotlib.pyplot as plt
+    rms_tar = preprocess.rms(target)
+    rms_pred1 = preprocess.rms(pred1)
+    rms_pred2 = preprocess.rms(pred2)
+    rms_pred3 = preprocess.rms(pred3) 
+
+    u_tau = 0.05
+    nu = 0.0004545454545
+    y = ds.coords['y'].values
+    y = abs(y-2)*(u_tau/nu)
+
+    if model == 'POD':
+        rms_tar = rms_tar/u_tau
+        rms_pred1 = rms_pred1/u_tau
+        rms_pred2 = rms_pred2/u_tau
+        rms_pred3 = rms_pred3/u_tau 
+
+    
+    name = model
+    
+    labels = ['DNS',r'$r=1536$',r'$r=192$',r'$r=24$']
+
+    cm = 1/2.54  # centimeters in inches
+    #fig, axs=plt.subplots(2,figsize=([7*cm,10*cm]),sharex=True,sharey=True,constrained_layout=False,dpi=1000)
+    fig, axs=plt.subplots(3,figsize=([7*cm,15*cm]),sharex=True,sharey=False,constrained_layout=True,dpi=1000)
+    # u
+    for i in range(0,3):
+        axs[i].plot(y,rms_tar[:,i],lw=2)
+        axs[i].plot(y,rms_pred1[:,i],lw=0.7)
+        axs[i].plot(y,rms_pred2[:,i],lw=0.7)
+        axs[i].plot(y,rms_pred3[:,i],lw=0.7)
+        axs[i].legend(labels,prop={'size': 6})
+        axs[i].grid(True)
+    
+    axs[0].set_title(name.capitalize(),weight="bold")
+    axs[0].set_ylabel(r"$u_{\mathrm{rms}}^{'+}$")
+    axs[0].grid(True)
+    # v
+    
+    
+    axs[1].set_ylabel(r"$v_{\mathrm{rms}}^{'+}$")
+    axs[1].grid(True)
+    # w
+
+
+    axs[2].grid(True)
+    axs[2].set_ylabel(r"$w_{\mathrm{rms}}^{'+}$")
+    axs[2].set_xlabel(r'$y^{+}$')
+    
+
+    #Setting labels and stuff
+    plt.show()
 
 
 
