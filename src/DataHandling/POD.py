@@ -1,7 +1,9 @@
-def POD(ds):
+def POD(ds,domain):
     """Saves POD by SVD
 
     Args:
+    ds (xrray)
+    domain (str)
         
     Returns:
         
@@ -33,13 +35,13 @@ def POD(ds):
     u, s, vh = np.linalg.svd(train_snap,full_matrices=False) #5,5min
     print('Save results')
     
-    np.save("/home/au569913/DataHandling/models/POD/u",u)
-    np.save("/home/au569913/DataHandling/models/POD/s",s)
-    np.save("/home/au569913/DataHandling/models/POD/vh",vh)
-    np.save("/home/au569913/DataHandling/models/POD/test_snap",test_snap)
-    np.save("/home/au569913/DataHandling/models/POD/mean_snapshot",mean_snapshot)
+    np.save("/home/au569913/DataHandling/models/POD/{}/u".format(domain),u)
+    np.save("/home/au569913/DataHandling/models/POD/{}/s".format(domain),s)
+    np.save("/home/au569913/DataHandling/models/POD/{}/vh".format(domain),vh)
+    np.save("/home/au569913/DataHandling/models/POD/{}/test_snap".format(domain),test_snap)
+    np.save("/home/au569913/DataHandling/models/POD/{}/mean_snapshot".format(domain),mean_snapshot)
 
-def projectPOD(modes):
+def projectPOD(modes,domain):
     """Project POD modes 
 
     Args:
@@ -50,9 +52,9 @@ def projectPOD(modes):
     """
     import numpy as np
     u = np.load("/home/au569913/DataHandling/u.npy")
-    mean_snapshot = np.load("/home/au569913/DataHandling/mean_snapshot.npy")
+    mean_snapshot = np.load("/home/au569913/DataHandling/models/POD/{}/mean_snapshot.npy".format(domain))
     
-    test_snap = np.load("/home/au569913/DataHandling/models/POD/test_snap.npy")
+    test_snap = np.load("/home/au569913/DataHandling/models/POD/{}/test_snap.npy".format(domain))
     ss = len(test_snap) # number of snapshots recreate from projection
 
     #Reshape to be compatible with matrix multi
@@ -72,3 +74,41 @@ def projectPOD(modes):
 #Potential new based on correlation matrix
 #if shapshots is rows first should be transposed. Since my snapshots are coluns we do reverse.
 #C = np.dot(array[:,0:n_snapshots], array[:,0:n_snapshots].T) / n_snapshots
+#%%
+def modeenergyplot(domain):
+    """Plot energy and cumulative energy of POD modes (s)
+    Args:
+    domain (str): The domain on which the POD has been carried out.
+    Returns:
+
+    """
+    import numpy as np
+    import matplotlib.pyplot as plt
+    s = np.load("/home/au569913/DataHandling/models/POD/{}/s.npy".format(domain))
+    s=s**2 # energy is singular values 
+    cum_s = (s.cumsum()/s.sum())
+    
+    name = ''
+    modes = 400
+    labels = ['DNS',r'$r=1536$',r'$r=192$',r'$r=24$']
+
+    cm = 1/2.54  # centimeters in inches
+    fig, axs=plt.subplots(1,2,figsize=([15*cm,5*cm]),sharex=False,sharey=False,constrained_layout=True,dpi=1000)
+    
+    axs[0].plot(range(0,len(s[0:modes])),s[0:modes],marker='.',lw=0.7,color='k', ms=2.5)
+    axs[1].plot(range(0,len(s[0:modes])),cum_s[0:modes],marker='.',lw=0.7,color='k', ms=2.5)
+    
+    axs[0].grid(True)
+    axs[1].grid(True)
+    axs[0].set_yscale('log', base=10)
+    
+    #axs[0].set_title(name.capitalize(),weight="bold")
+    axs[0].set_ylabel(r"Energy")
+    axs[0].set_xlabel(r'POD mode') 
+    
+    axs[1].set_ylabel(r"Cumulative Energy")
+    axs[1].set_xlabel(r'POD mode')
+
+    #Setting labels and stuff
+    plt.savefig("/home/au569913/DataHandling/reports/{}/modeenergy.pdf".format(domain),bbox_inches='tight')
+    plt.show()

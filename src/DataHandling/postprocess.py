@@ -2,30 +2,35 @@ def Qcrit(data,ds,snapshot=0):
     """"Ouputs Qcrit array
 
     Args:
-        data (nparray): np array of  field
+        data (nparray): np array of  field - if str 'ds' use ds as data
         ds (xarray): xarray dataset for determining coordinates
+        snapshot (int): If data is nparray then this is index of snapshot, if 'ds' then time of snapshot
     """
     import numpy as np
     import xarray as xr    
     coords = ['x','y','z']
     fields = ['u_vel','v_vel','w_vel']
     #only one timestep
-    #data=ds.isel(time=snapshot) #used if working
-    data=data[snapshot,:,:,:,:]
+    if data == 'ds':
+        data=ds.sel(time=snapshot) #used if working with ds
+    else:
+        data=data[snapshot,:,:,:,:]
     x = ds.coords['x'].values
     y = ds.coords['y'].values
     z = ds.coords['z'].values
     codict={'x':x,'y':y,'z':z}
 
-    strtens =np.zeros(shape=(3,3,32,32,32))
+    strtens =np.zeros(shape=(3,3,len(x),len(y),len(z)))
     for i,fi in enumerate(fields):
         for j,co in enumerate(coords):
-            #strtens[i,j,:,:,:] = data[fi].differentiate(co).values
-            strtens[i,j,:,:,:] = np.gradient(data[:,:,:,i],codict[co],axis=j)
+            if data == 'ds':
+                strtens[i,j,:,:,:] = data[fi].differentiate(co).values
+            else:
+                strtens[i,j,:,:,:] = np.gradient(data[:,:,:,i],codict[co],axis=j)
             
     S = 0.5*(strtens+strtens.transpose(1,0,2,3,4)) #Transpose strain tensor for all points
     A = 0.5*(strtens-strtens.transpose(1,0,2,3,4))
-    Q = 0.5*(np.linalg.norm(A,axis=(0,1),ord=2)-np.linalg.norm(S,axis=(0,1),ord=2))
+    Q = 0.5*((np.linalg.norm(A,axis=(0,1),ord=2))**2-(np.linalg.norm(S,axis=(0,1),ord=2))**2)
     return Q
 # %%
 def errornorm(pred,targ):
@@ -81,12 +86,12 @@ def KE_np(data,ds):
     y = ds.coords['y'].values
     z = ds.coords['z'].values
 
-    KE_pred = np.zeros(shape=(np.shape(data[:,0,0,0,0])[0],32,32,32)) #initialise
+    KE_pred = np.zeros(shape=(np.shape(data[:,0,0,0,0])[0],len(x),len(y),len(z))) #initialise
 
     for l in range(np.shape(KE_pred[:,0,0,0])[0]):
-        for i in range(32):
-            for j in range(32):
-                for k in range(32):
+        for i in range(len(x)):
+            for j in range(len(y)):
+                for k in range(len(z)):
                     KE_pred[l,i,j,k] = 0.5*(data[l,i,j,k,0]*data[l,i,j,k,0]+data[l,i,j,k,1]*data[l,i,j,k,1]+data[l,i,j,k,2]*data[l,i,j,k,2])
     #%%
     #integrate

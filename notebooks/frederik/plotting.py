@@ -22,29 +22,37 @@ targ = np.load('/home/au569913/DataHandling/models/output/{}/targets.npz'.format
 
 target_list=[targ["train"],targ["val"],targ["test"]]
 predctions=[pred["train"],pred["val"],pred["test"]]
+#%%
+import xarray as xr
+domain = 'nakamura'
+ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
+#ds=ds.isel(y=slice(0, 32))
 
-#%% velocity slice
-import DataHandling
+# %% Plot domain vel contour
 from DataHandling import plots
 import importlib
 importlib.reload(plots)
-plots.uslice(predctions,target_list,'wheretosave',ds,'z')
-
-# %% plot figure
-import matplotlib.pyplot as plt
-uin = ds.u_vel.isel(time=200,z=16)
-fig = plt.figure()
-ax = fig.add_subplot(111)
-#air2d.T.plot(cmap='jet',vmin=0)
-uin.T.plot.contourf(ax=ax,levels=200,cmap='jet',vmin=0)
-ax.set_aspect('equal')
-
-# %%
+plots.dsfield(ds,domain,dim='z')
+plots.dsfield(ds,domain,dim='y')
+#%% Kinetic energy plot of full domain
 import xarray as xr
-ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/data.zarr")
-ds=ds.isel(y=slice(0, 32))
+from DataHandling.features import preprocess
+from DataHandling import postprocess
+from DataHandling import plots
+import numpy as np
+import matplotlib.pyplot as plt
+u_tau = 0.05
+#ds = preprocess.flucds(ds)/u_tau   #utilise fluctuations or not
 
-# %% Isocountours
+KE_total=postprocess.KE_ds(ds) #calculate KE for all timesteps
+KE_total = KE_total/(u_tau**2) #nondimensionalize
+KE_min = KE_total.isel(time=KE_total.argmin()).coords['time'].values #index 
+KE_max = KE_total.isel(time=KE_total.argmax()).coords['time'].values #index
+#Predictions to be scattered if needed
+#data = predctions[2] #pick out train/val/test
+#KE_pred_total=postprocess.KE_np(data,ds)
+plots.KE_plot(KE_total,domain,fluc=False,KE_pred=False)
+# %% Isocountours  #######
 from DataHandling import postprocess
 from DataHandling import plots
 import importlib
@@ -52,70 +60,40 @@ importlib.reload(postprocess)
 importlib.reload(plots)
 
 #data = ds['u_vel'][200].values #pick vel field
-data = postprocess.Qcrit(target_list[2],ds,400) # Calc q-criterion
-plots.isocon(data,ds,'Target')
-data = postprocess.Qcrit(predctions[2],ds,400) # Calc q-criterion
-plots.isocon(data,ds,'Prediction')
+#plots.isocon(data,ds,'u_vel=200','nakamura','Qcrit')
 
-# %% vel_rms plots
-from DataHandling.features import preprocess
-import matplotlib.pyplot as plt
-import importlib
-importlib.reload(preprocess)
-#fluc = preprocess.flucnp(target_list[2])
-#rms_tar = preprocess.rms(fluc)
-#fluc = preprocess.flucnp(predctions[2])
-#rms_pred = preprocess.rms(fluc)
-rms_tar = preprocess.rms(target_list[2])
-rms_pred = preprocess.rms(predctions[2])
-u_tau = 0.05
-y = ds.coords['y'].values
-#plt.plot(y,rms_tar[:,2]/u_tau)
-#plt.plot(y,rms_pred[:,2]/u_tau)
-plt.plot(y,rms_tar[:,1])
-plt.plot(y,rms_pred[:,1])
+#%% Min/max kinetic energy
+importlib.reload(postprocess)
+importlib.reload(plots)
+#Nakamura
+#KE_max = 3003.
+#KE_min = 16182 
 
-#%% Kinetic energy
-import xarray as xr
-import numpy as np
-import matplotlib.pyplot as plt
-ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/data.zarr")
+data = postprocess.Qcrit('ds',ds,KE_max) # Calc q-criterion
+plots.isocon(data,ds,'t=3003',domain,'Qcrit')
+data = postprocess.Qcrit('ds',ds,KE_min) # Calc q-criterion
+plots.isocon(data,ds,'t=16182',domain,'Qcrit')
+
+#%% Prediction target plots
+exit()
 ds=ds.isel(y=slice(0, 32))
-u_tau = 0.05
-ds = preprocess.flucds(ds)/u_tau
-
-KE_total=postprocess.KE_ds(ds)
-
-data = predctions[2] #pick out train/val/test
-KE_pred_total=postprocess.KE_np(data,ds)
-
-test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
-test_time = ds.coords['time'][test_ind]
-
-train_ind =np.load("/home/au569913/DataHandling/data/interim/train_ind.npy")
-train_time = ds.coords['time'][train_ind]
-
-#KE_total.plot(color='k',lw=0.5)
-plt.scatter(test_time,KE_pred_total*(u_tau**2),marker='.')
-
-#%% Arranged KE
-#KE_pred_total_sort = KE_pred_total.sort() #sorted array of predictions
-#KE_total_sort=KE_total.sortby(KE_total) #sorted array of ds
-arr1inds = KE_total.isel(time=test_ind).values.argsort() # pick out indexes of sorted ds
-plt.plot(np.arange(0,499,1),KE_total.isel(time=test_ind).values[arr1inds[::-1]],color='k')
-plt.scatter(np.arange(0,499,1),KE_pred_total[arr1inds[::-1]],marker='.')
-KE_c3 = postprocess.KE_np(c3,ds)
-plt.scatter(np.arange(0,499,1),KE_c3[arr1inds[::-1]]/(u_tau**2),marker='.')
-
-
-
-#%% Test for conv
-from DataHandling.features import preprocess
-import matplotlib.pyplot as plt
+#velocity
+import DataHandling
+from DataHandling import plots
 import importlib
-importlib.reload(preprocess)
-ds_np = np.load("/home/au569913/DataHandling/ds_np.npy")
-u_tau = 0.05
-first, last = preprocess.testforconv(ds_np,2500)
+importlib.reload(plots)
+plots.uslice(predctions,target_list,'wheretosave',ds,'z')
+#%% Isocon For target/pred
+data = postprocess.Qcrit(target_list[2],ds,30) # Calc q-criterion
+plots.isocon(data,ds,'Target',domain,'Qcrit')
+data = postprocess.Qcrit(predctions[2],ds,30) # Calc q-criterion
+plots.isocon(data,ds,'Prediction',domain,'Qcrit')
 
-# %%
+#%% Arranged KE plot
+from DataHandling import POD
+modes = 24
+c3,d3 = POD.projectPOD(modes,domain)
+KE_c3 = postprocess.KE_np(c3,ds)
+plots.KE_arrangeplot(KE_total, KE_pred_total, KE_c3)
+
+

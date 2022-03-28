@@ -16,7 +16,7 @@ from DataHandling.models import models
 
 os.environ['WANDB_DISABLE_CODE']='True'
 
-wandbnotes = "Nakamura2, relu, plus_fluctuations"
+wandbnotes = "Nakamura8, batch100, epochs1000, plus_fluctuations"
 tf_records = False
 
 y_plus=15
@@ -63,7 +63,7 @@ if tf_records == False:
     validation = np.stack((validation['u_vel'].values,validation['v_vel'].values,validation['w_vel']),axis=-1)
 
 #%% Model
-model=models.nakamura2(var,target,tf_records,activation)
+model=models.nakamura(var,target,tf_records,activation)
 
 
 #%% Initialise WandB & run
@@ -100,7 +100,7 @@ if tf_records == True:
 
 #fgn version which utlisized format of xarray to np array
 if tf_records == False:
-    model.fit(x=train,y=train,epochs=300,validation_data=[validation, validation],callbacks=[WandbCallback(),early_stopping_cb,backup_cb])
+    model.fit(x=train,y=train,batch_size=batch_size,epochs=5000,validation_data=[validation, validation],callbacks=[WandbCallback(),early_stopping_cb,backup_cb])
 
 #Model save
 model.save(os.path.join("/home/au569913/DataHandling/models/trained",wandb.run.name))

@@ -922,8 +922,49 @@ def stat_plots(mean_dataset_loc,batches):
 
 
 #--- fgn --#
+
+def dsfield(ds,domain,dim='y'):
+    """"2D u velocity slice 
+
+    Args:
+        ds (xarray)
+        dim (str): dimension to slice
+    """
+    import matplotlib.pyplot as plt
+    u_tau = 0.05
+    nu = 0.0004545454545
+    ds = ds.copy()
+    ds.coords['x']=ds.coords['x']*(u_tau/nu)
+    ds.coords['y'] = abs(ds.coords['y']-ds.coords['y'].max())*(u_tau/nu) #y_plus
+    ds.coords['z'] = (ds.coords['z'] + (-ds.coords['z'][0]))*(u_tau/nu)
+    if dim=='y':
+        time = 4200
+        y = 1.882
+        uin = ds.u_vel.isel(time=400,y=10)
+    elif dim=='z':
+        time = 3003
+        z = 0
+        uin = ds.u_vel.isel(time=0,z=16)
+
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    uin.T.plot.contourf(ax=ax,levels=100,cmap='jet',vmin=0, cbar_kwargs={'fraction':0.03})
+    #fig.axes[1].remove()
+    fig.axes[1].set_ylabel('u')
+    ax.set_aspect('equal')
+    ax.set_title(r'$time={:.0f},{}^{{+}}={:.2f}$'.format(uin.coords['time'].values,dim,uin.coords[dim].values))
+    if dim == 'y':
+        ax.set_ylabel(r'${}^{{+}}$'.format('z'))
+    elif dim == 'z':
+        ax.set_ylabel(r'${}^{{+}}$'.format('y'))
+    ax.set_xlabel(r'$x^{+}$')
+
+    plt.savefig("/home/au569913/DataHandling/reports/{}/{}_dsfield.pdf".format(domain,dim),bbox_inches='tight')
+
+
 def uslice(predctions,target_list,output_path,ds,dim):
-    """"2D u velocity slice plot
+    """"2D u velocity slice plot of target/pred
 
     Args:
         predctions (list): list of the train,validation,test predictions
@@ -988,60 +1029,100 @@ def uslice(predctions,target_list,output_path,ds,dim):
     cbar.formatter.set_powerlimits((0, 0))
     cbar.set_ticks([0.2, 0.4, 0.6, 0.8]), cbar.set_ticklabels([0.2, 0.4, 0.6, 0.8])
     cbar.ax.set_xlabel(r'$u_{vel} $',rotation=0)
+    #plt.savefig("/home/au569913/DataHandling/reports/{}/{}_rms.pdf".format(domain,name),bbox_inches='tight')
     plt.show()
 
-def isocon(data,ds,name):
+def isocon(data,ds,name,domain,type):
     """"3D isocontour
 
     Args:
         ds (xarray): Xarray dataset for coordinates
         data (nparray): nparray
+        name (str): String of name to save and put in title
+        domain (str): Domain e.g. nakamura/blonigan
     """
     import plotly.graph_objects as go
     from scipy import interpolate
     import numpy as np
+    import plotly.io as pio
+    #pio.kaleido.scope.default_format = "svg"
     # Data coordinates
+    x = ds['x'].values
+    y = ds['y'].values
+    z = ds['z'].values
+
+    u_tau = 0.05
+    nu = 0.0004545454545
+    
+    x = x*(u_tau/nu)
+    y = abs(y-y.max())*(u_tau/nu) #y_plus
+    z = (z + (-z[0]))*(u_tau/nu)
+    xtitle = r'$x^{+}$'
     #Create meshgrid
-    X, Y, Z = np.meshgrid(ds['x'].values, ds['y'].values, ds['z'].values)
+    X, Y, Z = np.meshgrid(x, y, z, indexing='ij')
     #Convert to 32768,3
     points = np.array((X.flatten(), Y.flatten(), Z.flatten())).T
 
     # Data values @ above coords
     values = data.flatten().T
-    x = ds['x'].values
-    y = ds['y'].values
-    z = ds['z'].values
-    # Grid to interp to
-    Xnew, Ynew, Znew = np.mgrid[x.min():x.max():32j, y.min():y.max():32j, z.min():z.max():32j]
-    # New data values on interp grid
-    newdata = interpolate.griddata(points, values, (Xnew,Ynew,Znew) )
-    print('Done')
     
+    # Grid to interpolate to
+    #Xnew, Ynew, Znew = np.mgrid[x.min():x.max():32j, y.min():y.max():len(y)*1j, z.min():z.max():32j]
+    # New data values on interp grid
+    #newdata = interpolate.griddata(points, values, (Xnew,Ynew,Znew) )
+    print('Done')
+    if type == 'Qcrit':
+        im = 0.01
+        sc = 1
+    if type == 'uvel':
+        im = -0.01
+        sc = 2
     # make the plot
     fig = go.Figure(data=[
             go.Isosurface(x=X.flatten(),y=Y.flatten(),z=Z.flatten(),
-                       value=newdata.flatten(),
-                       opacity=0.8,
-                       isomin=0.01,
-                       isomax=0.01,
-                       surface_count=1,
-                       lighting=dict(ambient=0.7),
-                       colorscale='amp',
-                       showscale=False,
-                       caps=dict(x_show=False, y_show=False)
-                       ),
-            ])
+                        value=values.flatten(),
+                        opacity=0.9,
+                        #surface_fill=0.6,
+                        isomin=im, # changes based on qcrit or uvel
+                        isomax=0.01,
+                        surface_count=sc,
+                        lighting=dict(ambient=0.7),
+                        colorscale='amp',
+                        showscale=False,
+                        caps=dict(x_show=False, y_show=False)
+                        ),
+                    ])
+    scene = dict(
+                    xaxis_title=r"x+",
+                    yaxis_title=r'y+',
+                    zaxis_title=r'z+'
+    )
+    
     # Default parameters which are used when `layout.scene.camera` is not provided
     camera = dict(
         up=dict(x=0.1, y=0.8, z=0.1),
         center=dict(x=0, y=-0.5, z=0),
         eye=dict(x=1.3, y=1, z=1.8)
     )
-    fig.update_layout(scene_camera=camera, title=name)
+    fig.update_layout(scene=scene,scene_camera=camera, title=name)
+    fig.update_layout(
+        autosize=False,
+        width=600,
+        height=300,
+        margin=go.layout.Margin(
+        l=0,
+        r=0,
+        b=0,
+        t=30,
+        pad = 0
+    )
+)
+    fig.write_image("/home/au569913/DataHandling/reports/{}/{}_isocon.pdf".format(domain,name))
+    #fig.show(renderer="svg")
     fig.show()
-    #fig.write_image("/home/au569913/DataHandling/fig1.png")
+    
 #%%
-def rmsplot(model,target,pred1,pred2,pred3,ds):
+def rmsplot(model,target,pred1,pred2,pred3,ds,domain):
     from DataHandling.features import preprocess
     import matplotlib.pyplot as plt
     rms_tar = preprocess.rms(target)
@@ -1052,7 +1133,7 @@ def rmsplot(model,target,pred1,pred2,pred3,ds):
     u_tau = 0.05
     nu = 0.0004545454545
     y = ds.coords['y'].values
-    y = abs(y-2)*(u_tau/nu)
+    y = abs(y-2)*(u_tau/nu) #y_plus
 
     if model == 'POD':
         rms_tar = rms_tar/u_tau
@@ -1076,8 +1157,8 @@ def rmsplot(model,target,pred1,pred2,pred3,ds):
         axs[i].plot(y,rms_pred3[:,i],lw=0.7)
         axs[i].legend(labels,prop={'size': 6})
         axs[i].grid(True)
-    
-    axs[0].set_title(name.capitalize(),weight="bold")
+    #name.capitalize()
+    axs[0].set_title(name,weight="bold")
     axs[0].set_ylabel(r"$u_{\mathrm{rms}}^{'+}$")
     axs[0].grid(True)
     # v
@@ -1094,7 +1175,53 @@ def rmsplot(model,target,pred1,pred2,pred3,ds):
     
 
     #Setting labels and stuff
+    plt.savefig("/home/au569913/DataHandling/reports/{}/{}_rms.pdf".format(domain,name),bbox_inches='tight')
     plt.show()
+#%%
+def KE_plot(KE,domain,fluc=False,KE_pred=False):
+    import matplotlib.pyplot as plt
+    import xarray as xr
+    import numpy as np
+    cm = 1/2.54  # centimeters in inches
+    u_tau = 0.05
 
+    fig, axs=plt.subplots(1,figsize=([17*cm,7*cm]),sharex=True,sharey=False,constrained_layout=True,dpi=1000)
+    KE.plot(ax = axs, color='k',lw=0.5)
+    axs.set_xlabel(r'$t_{e}$')
+    if fluc == True:
+        axs.set_ylabel(r'$TKE^{+}$')
+    else:
+        axs.set_ylabel(r'$KE^{+}$')
+    axs.grid(True)
+    
+    if KE_pred != False:
+        test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+        test_time = KE.coords['time'][test_ind]
 
+        train_ind =np.load("/home/au569913/DataHandling/data/interim/train_ind.npy")
+        train_time = KE.coords['time'][train_ind]
 
+        plt.scatter(test_time,KE_pred*(u_tau**2),marker='.')
+        
+    plt.savefig("/home/au569913/DataHandling/reports/{}/KE.pdf".format(domain),bbox_inches='tight')
+
+#%%
+def KE_arrangeplot(KE_total, KE_pred_total, KE_c3,domain):
+    import numpy as np
+    import xarray as xr
+    import matplotlib.pyplot as plt
+    from DataHandling import postprocess
+    u_tau = 0.05
+
+    cm = 1/2.54  # centimeters in inches
+    fig, axs=plt.subplots(1,figsize=([17*cm,7*cm]),sharex=True,sharey=False,constrained_layout=True,dpi=1000)
+
+    test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+
+    arr1inds = KE_total.isel(time=test_ind).values.argsort() # pick out indexes of sorted ds
+    plt.plot(np.arange(0,499,1),KE_total.isel(time=test_ind).values[arr1inds[::-1]],color='k')
+    plt.scatter(np.arange(0,499,1),KE_pred_total[arr1inds[::-1]],marker='.')
+    plt.scatter(np.arange(0,499,1),KE_c3[arr1inds[::-1]]/(u_tau**2),marker='.')
+    plt.ylabel(r'$TKE^{+}$')
+
+    plt.savefig("/home/au569913/DataHandling/reports/{}/KE_arranged.pdf".format(domain),bbox_inches='tight')

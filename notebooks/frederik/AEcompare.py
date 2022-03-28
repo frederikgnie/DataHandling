@@ -20,6 +20,13 @@ targ = np.load('/home/au569913/DataHandling/models/output/{}/targets.npz'.format
 target=targ["test"] 
 # %% Plot rms
 from DataHandling import plots
-plots.rmsplot('AE',target,predlist[0],predlist[1],predlist[2],ds)
+plots.rmsplot('AE',target,predlist[0],predlist[1],predlist[2],ds,'nakamura')
 
 # %%
+from DataHandling import postprocess
+import importlib
+importlib.reload(postprocess)
+AE_error=[]
+for i in range(0,3):
+    AE_error.append(postprocess.errornorm(predlist[i],target))
+POD_error = [postprocess.errornorm(c1,test_snap), postprocess.errornorm(c2,test_snap),postprocess.errornorm(c3,test_snap)]
