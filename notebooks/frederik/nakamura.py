@@ -16,28 +16,38 @@ from DataHandling.models import models
 
 os.environ['WANDB_DISABLE_CODE']='True'
 
-wandbnotes = "Nakamura8, batch100, epochs1000, plus_fluctuations"
-tf_records = False
+wandbnotes = "1pi2"
+tf_records = False #utilise tf_records aproach or not
 
-y_plus=15
-repeat=3
-shuffle=100
-#batch_size=10
-batch_size=100
+batch_size=32
 activation='relu'
 optimizer="adam"
 loss='mean_squared_error'
 patience=50
+epochs = 5000
+
+model_type="nakamura2"
+plus_fluc = True
+domain = '1pi'
+
+#
+#y_plus=15
+#repeat=3
+#shuffle=100
+#batch_size=10
 var=['u_vel','v_vel','w_vel']
 target=['u_tar','v_tar','w_tar']
-loss_dict={target[0]:'mean_squared_error',target[1]:'mean_squared_error',target[2]:'mean_squared_error'}
-normalized=False
-dropout=False
-skip=4
-model_type="baseline"
+##loss_dict={target[0]:'mean_squared_error',target[1]:'mean_squared_error',target[2]:'mean_squared_error'}
+#normalized=False
+#dropout=False
+#skip=4
+
 
 #%%Load data from tf scracth approach:
 if tf_records == True:
+    y_plus=15
+    repeat=3
+    shuffle=100
     data=slices.load_from_scratch(y_plus,var,target,normalized,repeat=repeat,shuffle_size=shuffle,batch_s=batch_size)
     train=data[0]
     validation=data[1]
@@ -45,7 +55,7 @@ if tf_records == True:
 #%% Load data from xarray approach:
 if tf_records == False:
     import xarray as xr
-    ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/data.zarr")
+    ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
     ds=ds.isel(y=slice(0, 32)) #Reduce y-dim from 65 to 32 as done by nakamura
     u_tau = 0.05
     ds = preprocess.flucds(ds)/u_tau
@@ -59,31 +69,42 @@ if tf_records == False:
     test = ds.isel(time = train_ind)
 
     #Convert to np array
+    print('Coverting to numpy array')
     train=np.stack((train['u_vel'].values,train['v_vel'].values,train['w_vel']),axis=-1) #use values to pick data as np array and stack that shit
     validation = np.stack((validation['u_vel'].values,validation['v_vel'].values,validation['w_vel']),axis=-1)
 
 #%% Model
-model=models.nakamura(var,target,tf_records,activation)
+print('Building model')
+model=models.nakamura1pi2(var,target,tf_records,activation)
 
 
 #%% Initialise WandB & run
 wandb.init(project="Thesis",notes=wandbnotes)
 
 config=wandb.config
-config.y_plus=y_plus
-config.repeat=repeat
-config.shuffle=shuffle
+config.patience=patience
 config.batch_size=batch_size
 config.activation=activation
 config.optimizer=optimizer
 config.loss=loss
-config.patience=patience
-config.variables=var
-config.target=target
-config.dropout=dropout
-config.normalized=normalized
-config.skip=skip
+config.epochs=epochs
+
+#fgn config
 config.model=model_type
+config.plus_fluc=plus_fluc
+config.domain=domain
+config.tf_records=tf_records
+
+
+#config.y_plus=y_plus
+#config.repeat=repeat
+#config.shuffle=shuffle
+#config.variables=var
+#config.target=target
+#config.dropout=dropout
+#config.normalized=normalized
+#config.skip=skip
+
 
 model.compile(loss=loss, optimizer=optimizer)
 
@@ -100,7 +121,7 @@ if tf_records == True:
 
 #fgn version which utlisized format of xarray to np array
 if tf_records == False:
-    model.fit(x=train,y=train,batch_size=batch_size,epochs=5000,validation_data=[validation, validation],callbacks=[WandbCallback(),early_stopping_cb,backup_cb])
+    model.fit(x=train,y=train,batch_size=batch_size,epochs=epochs,validation_data=[validation, validation],callbacks=[WandbCallback(),early_stopping_cb,backup_cb])
 
 #Model save
 model.save(os.path.join("/home/au569913/DataHandling/models/trained",wandb.run.name))

@@ -17,10 +17,11 @@ import matplotlib.pyplot as plt
 from DataHandling.models import predict
 #%% Inputs ###
 tf_records = False
-name="deep-leaf-32"
+name="noble-wind-39"
 model=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name))
-overwrite=False
+domain = '1pi'
 
+overwrite=False
 vars=['u_vel','v_vel','w_vel']
 target = ['u_tar','v_tar','w_tar']
 normalize=False
@@ -37,7 +38,7 @@ if tf_records == True:
 # %% fgn style
 if tf_records == False:
 
-    pred = predict.predictxr(name, model)
+    pred = predict.predictxr(name, model, domain) #needs to have correct zarr/index save
     
     
 # # %% plot figure

@@ -62,7 +62,7 @@ def KE_ds(ds):
     ds = ds.integrate('y')
     ds = ds.integrate('x')
     ds = ds.integrate('z')
-    print('Loading')
+    print('Loading ds')
     ds = ds.load() #convert to np array
     KE_total = ds
     return KE_total

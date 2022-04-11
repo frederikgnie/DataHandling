@@ -379,3 +379,9 @@ def testforconv(ds_np,batch):
     #last = [last.u_vel.values, last.v_vel.values, last.w_vel.values]
     return first, last
 
+#def savedsmean(ds,domain):
+#    import numpy as np
+#    import xarray as xr
+#    ds_mean=ds.mean(dim=('time','x','z'))
+#    mean_np=np.stack((ds_mean['u_vel'].values,ds_mean['v_vel'].values,ds_mean['w_vel']),axis=-1)
+#    np.save("/home/au569913/DataHandling/data/interim/train_ind",meanfield_)

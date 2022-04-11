@@ -11,8 +11,8 @@ def POD(ds,domain):
     import numpy as np
     import xarray as xr
     print('Creating numpy array of ds')
-    #ds_np = np.stack((ds['u_vel'].values,ds['v_vel'].values,ds['w_vel']),axis=-1)
-    ds_np =np.load("/home/au569913/DataHandling/ds_np.npy")
+    ds_np = np.stack((ds['u_vel'].values,ds['v_vel'].values,ds['w_vel']),axis=-1)
+    #ds_np =np.load("/home/au569913/DataHandling/ds_np.npy") #load if already created
 
     test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
     train_ind =np.load("/home/au569913/DataHandling/data/interim/train_ind.npy")
@@ -20,6 +20,7 @@ def POD(ds,domain):
     train_snap = ds_np[train_ind]
 
     #Subtract mean in time of training snapshots
+    print('Subtracting mean')
     mean_snapshot = train_snap.mean(axis=0) 
     for j in range(0, len(train_ind)):
         train_snap[j,:,:,:]=train_snap[j,:,:,:] - mean_snapshot
@@ -51,7 +52,7 @@ def projectPOD(modes,domain):
 
     """
     import numpy as np
-    u = np.load("/home/au569913/DataHandling/u.npy")
+    u = np.load("/home/au569913/DataHandling/models/POD/{}/u.npy".format(domain))
     mean_snapshot = np.load("/home/au569913/DataHandling/models/POD/{}/mean_snapshot.npy".format(domain))
     
     test_snap = np.load("/home/au569913/DataHandling/models/POD/{}/test_snap.npy".format(domain))
@@ -67,7 +68,7 @@ def projectPOD(modes,domain):
     # calculate first ss snapshots
     a = u[:,0:r].T @ test_snap[:,0:ss] #calculate r weigths
     b = u[:,0:r] @ a # recontruct img with weights to eigenvectors
-    c = b.T.reshape(ss,32,32,32,3) #fluctuations since no mean is added
+    c = b.T.reshape((ss,) + mean_snapshot.shape) #ss,32,32,32,3 fluctuations since no mean is added
     d = c + mean_snapshot #(4999,32,32,32,3) + (32,32,32,3)broadcasting
     return c,d
 
@@ -111,4 +112,4 @@ def modeenergyplot(domain):
 
     #Setting labels and stuff
     plt.savefig("/home/au569913/DataHandling/reports/{}/modeenergy.pdf".format(domain),bbox_inches='tight')
-    plt.show()
+    #plt.show()

@@ -938,9 +938,9 @@ def dsfield(ds,domain,dim='y'):
     ds.coords['y'] = abs(ds.coords['y']-ds.coords['y'].max())*(u_tau/nu) #y_plus
     ds.coords['z'] = (ds.coords['z'] + (-ds.coords['z'][0]))*(u_tau/nu)
     if dim=='y':
-        time = 4200
-        y = 1.882
-        uin = ds.u_vel.isel(time=400,y=10)
+        time = 4200 # ind=400
+        y = 1.882 # ind = 10
+        uin = ds.u_vel.isel(time=3000,y=10)
     elif dim=='z':
         time = 3003
         z = 0
@@ -949,28 +949,30 @@ def dsfield(ds,domain,dim='y'):
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    uin.T.plot.contourf(ax=ax,levels=100,cmap='jet',vmin=0, cbar_kwargs={'fraction':0.03})
+    cbar_frac = 0.025 if dim == 'y' else 0.025
+    uin.T.plot.contourf(ax=ax,levels=200,cmap='jet',vmin=0, cbar_kwargs={'fraction':cbar_frac})
+    
     #fig.axes[1].remove()
-    fig.axes[1].set_ylabel('u')
+    fig.axes[1].set_ylabel(r'$u$')
     ax.set_aspect('equal')
-    ax.set_title(r'$time={:.0f},{}^{{+}}={:.2f}$'.format(uin.coords['time'].values,dim,uin.coords[dim].values))
+    ax.set_title(r'$t_{{e}}={:.0f},{}^{{+}}={:.2f}$'.format(uin.coords['time'].values,dim,uin.coords[dim].values))
     if dim == 'y':
         ax.set_ylabel(r'${}^{{+}}$'.format('z'))
     elif dim == 'z':
         ax.set_ylabel(r'${}^{{+}}$'.format('y'))
     ax.set_xlabel(r'$x^{+}$')
 
-    plt.savefig("/home/au569913/DataHandling/reports/{}/{}_dsfield.pdf".format(domain,dim),bbox_inches='tight')
+    plt.savefig("/home/au569913/DataHandling/reports/{}/{}_dsfield_{}.png".format(domain,dim,domain),bbox_inches='tight')
 
 
-def uslice(predctions,target_list,output_path,ds,dim):
+def uslice(predctions,target_list,name,domain,dim,save=True):
     """"2D u velocity slice plot of target/pred
 
     Args:
         predctions (list): list of the train,validation,test predictions
         target_list (list): list of the train,validation,test target
         names (list): list of the names of the data. Normally train,validaiton,test
-        output_path (Path): Path of where to save the figures
+        name (str): name of save
         ds (xrray)
         dim (str): dimension to slice
     """
@@ -982,9 +984,28 @@ def uslice(predctions,target_list,output_path,ds,dim):
     sns.set_theme()
     sns.set_style("ticks")
     sns.set_context("paper")
-    ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/data.zarr")
+    ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
     ds=ds.isel(y=slice(0, 32))
-    x, y = np.meshgrid(ds['x'].values, ds['y'].values)
+    #x, y = np.meshgrid(ds['x'].values, ds['y'].values)
+    x = ds['x'].values
+    y = ds['y'].values
+    z = ds['z'].values
+
+    u_tau = 0.05
+    nu = 0.0004545454545
+    
+    x = x*(u_tau/nu)
+    y = abs(y-y.max())*(u_tau/nu) #y_plus
+    z = (z + (-z[0]))*(u_tau/nu)
+    xtitle = r'$x^{+}$'
+    if dim == 'y':
+    #Create meshgrid
+        x, y = np.meshgrid(x, y, indexing='xy')
+    elif dim == 'z':
+        x, y = np.meshgrid(x, z, indexing='xy')
+    
+
+
     #plt.scatter(x, y,0.1)
     #segs1 = np.stack((x,y), axis=2)
     #segs2 = segs1.transpose(1,0,2)
@@ -994,42 +1015,52 @@ def uslice(predctions,target_list,output_path,ds,dim):
     time = 100
     #z = ds.isel(time=200,z=16)['u_vel'].values.T
     if dim == 'y':
-        z1 = target_list[2][time,:,:,16,0].T
-        z2 = predctions[2][time,:,:,16,0].T
+        z1 = target_list[time,:,:,16,0].T
+        z2 = predctions[time,:,:,16,0].T
+        
     if dim == 'z':
-        z1 = target_list[2][time,:,16,:,0].T
-        z2 = predctions[2][time,:,16,:,0].T
+        z1 = target_list[time,:,16,:,0].T
+        z2 = predctions[time,:,16,:,0].T
+        
     if dim == 'POD':
         z1 = target_list
         z2 = predctions
+        
 
     cm = 1/2.54  # centimeters in inches
-    name='test'
+    #name='test'
 
     fig, axs=plt.subplots(2,figsize=([7*cm,10*cm]),sharex=True,sharey=True,constrained_layout=False,dpi=1000)
     #Target
-    pcm=axs[0].contourf(x,y,z1,levels=100,cmap='jet')
-    axs[0].set_title(name.capitalize(),weight="bold")
-    axs[0].set_ylabel(r'$z$')
+    pcm=axs[0].contourf(x,y,z1,levels=200,cmap='jet')
+    axs[0].contourf(x,y,z1,levels=200,cmap='jet')
+    axs[0].set_title(name,weight="bold") #title
+    axs[0].set_ylabel(r'${}^{{+}}$'.format(dim))
 
     #prediction
-    axs[1].contourf(x,y,z2,levels=100,cmap='jet')
-    axs[1].set_xlabel(r'$x$')
-    axs[1].set_ylabel(r'$z$')
+    axs[1].contourf(x,y,z2,levels=200,cmap='jet')
+    axs[1].contourf(x,y,z2,levels=200,cmap='jet')
+    axs[1].set_xlabel(r'$x^{+}$')
+    axs[1].set_ylabel(r'${}^{{+}}$'.format(dim))
 
     #Setting labels and stuff
-    axs[0].text(-0.42, 0.20, 'Target',
+    axs[0].text(-0.3, 0.20, 'Target',
             verticalalignment='bottom', horizontalalignment='right',
             transform=axs[0].transAxes,rotation=90,weight="bold")
-    axs[1].text(-0.42, 0.00, 'Prediction',
+    axs[1].text(-0.3, 0.00, 'Prediction',
             verticalalignment='bottom', horizontalalignment='right',
             transform=axs[1].transAxes,rotation=90,weight="bold")
     fig.subplots_adjust(wspace=-0.31,hspace=0.25)
-    cbar=fig.colorbar(pcm,ax=axs[:],aspect=20,shrink=1.0,location="bottom",pad=0.22)
+    cbar=fig.colorbar(pcm,ax=axs[:],aspect=20,shrink=1.0,location="bottom",pad=0.2)
     cbar.formatter.set_powerlimits((0, 0))
-    cbar.set_ticks([0.2, 0.4, 0.6, 0.8]), cbar.set_ticklabels([0.2, 0.4, 0.6, 0.8])
-    cbar.ax.set_xlabel(r'$u_{vel} $',rotation=0)
-    #plt.savefig("/home/au569913/DataHandling/reports/{}/{}_rms.pdf".format(domain,name),bbox_inches='tight')
+    ticks = np.linspace(int(min([z1.min() ,z2.min()])), int(max([z1.max() ,z2.max()])), 5, endpoint=True)
+    #cbar.set_ticks([-5 -2.5, 0.0, 2.5, 5]), cbar.set_ticklabels([-5 -2.5, 0.0, 2.5, 5])
+    print(ticks)
+    cbar.set_ticks(ticks), cbar.set_ticklabels(ticks)
+    #cbar.set_format('%0.1f')
+    cbar.ax.set_xlabel(r"$u^{'+}$",rotation=0)
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/uslice_{}_{}.pdf".format(domain,name,dim),bbox_inches='tight')
     plt.show()
 
 def isocon(data,ds,name,domain,type):
@@ -1067,48 +1098,89 @@ def isocon(data,ds,name,domain,type):
     values = data.flatten().T
     
     # Grid to interpolate to
-    #Xnew, Ynew, Znew = np.mgrid[x.min():x.max():32j, y.min():y.max():len(y)*1j, z.min():z.max():32j]
+    #Xnew, Ynew, Znew = np.mgrid[x.min():x.max():len(x)*2j, y.min():y.max():len(y)*2j, z.min():z.max():len(z)*2j]
     # New data values on interp grid
     #newdata = interpolate.griddata(points, values, (Xnew,Ynew,Znew) )
     print('Done')
     if type == 'Qcrit':
         im = 0.01
         sc = 1
+        showscale = False
+        colorscale ='amp'
     if type == 'uvel':
         im = -0.01
         sc = 2
+        showscale = True
+        colorscale = 'jet'
     # make the plot
     fig = go.Figure(data=[
             go.Isosurface(x=X.flatten(),y=Y.flatten(),z=Z.flatten(),
                         value=values.flatten(),
-                        opacity=0.9,
+                        opacity=0.95, #0.9
                         #surface_fill=0.6,
                         isomin=im, # changes based on qcrit or uvel
                         isomax=0.01,
                         surface_count=sc,
-                        lighting=dict(ambient=0.7),
-                        colorscale='amp',
-                        showscale=False,
+                        lighting=dict(ambient=0.7), #0.7
+                        colorscale=colorscale,
+                        showscale=showscale,
                         caps=dict(x_show=False, y_show=False)
                         ),
                     ])
+    if type == 'uvel':
+        fig = go.Figure(data=[
+                go.Isosurface(x=X.flatten(),y=Y.flatten(),z=Z.flatten(),
+                            value=values.flatten(),
+                            opacity=0.9,
+                            #surface_fill=0.6,
+                            isomin=0.01, # changes based on qcrit or uvel
+                            isomax=0.01,
+                            surface_count=1,
+                            lighting=dict(ambient=0.7),
+                            colorscale=colorscale,
+                            showscale=False,
+                            caps=dict(x_show=False, y_show=False)
+                            ),
+                go.Isosurface(x=X.flatten(),y=Y.flatten(),z=Z.flatten(),
+                            value=values.flatten(),
+                            opacity=0.9,
+                            #surface_fill=0.6,
+                            isomin=-0.01, # changes based on qcrit or uvel
+                            isomax=-0.01,
+                            surface_count=1,
+                            lighting=dict(ambient=0.7), 
+                            colorscale='Blues',
+                            showscale=False,
+                            caps=dict(x_show=False, y_show=False),
+                            ),
+                        ])
+    
+    
     scene = dict(
                     xaxis_title=r"x+",
                     yaxis_title=r'y+',
                     zaxis_title=r'z+'
     )
-    
     # Default parameters which are used when `layout.scene.camera` is not provided
     camera = dict(
-        up=dict(x=0.1, y=0.8, z=0.1),
-        center=dict(x=0, y=-0.5, z=0),
-        eye=dict(x=1.3, y=1, z=1.8)
+        up=dict(x=0.1, y=0.8, z=0.1), #x=0.1, y=0.8, z=0.1
+        center=dict(x=-0.3, y=-0.5, z=-0.4), #x=0, y=-0.5, z=0
+        eye=dict(x=1.2, y=0.9, z=1.6) #x=1.3, y=1, z=1.8
     )
-    fig.update_layout(scene=scene,scene_camera=camera, title=name)
+    #fig.update_traces(colorbar_tickvals=[-0.01,0.01])
+    
+    if isinstance(name, str):
+        title = name
+    else:
+        title=r'$t_{{e}}={:.0f}$'.format(name)
+        name = 't={:.0f}'.format(name)
+    
+    fig.update_layout(scene=scene,scene_camera=camera, title_text=title, title_x=0.5)
+    fig.update_traces(colorbar_len=0.5, colorbar_thickness=5,colorbar_nticks=3)
     fig.update_layout(
         autosize=False,
-        width=600,
-        height=300,
+        width=1030, #515
+        height=600, #200
         margin=go.layout.Margin(
         l=0,
         r=0,
@@ -1117,9 +1189,9 @@ def isocon(data,ds,name,domain,type):
         pad = 0
     )
 )
-    fig.write_image("/home/au569913/DataHandling/reports/{}/{}_isocon.pdf".format(domain,name))
-    #fig.show(renderer="svg")
-    fig.show()
+    fig.write_image("/home/au569913/DataHandling/reports/{}/{}_isocon.pdf".format(domain,name),format='pdf')
+    fig.show(renderer="svg")
+    #fig.show()
     
 #%%
 def rmsplot(model,target,pred1,pred2,pred3,ds,domain):
@@ -1146,6 +1218,8 @@ def rmsplot(model,target,pred1,pred2,pred3,ds,domain):
     
     labels = ['DNS',r'$r=1536$',r'$r=192$',r'$r=24$']
 
+    if domain == '1pi':
+        labels = ['DNS',r'$r=3072$',r'$r=284$',r'$r=48$']
     cm = 1/2.54  # centimeters in inches
     #fig, axs=plt.subplots(2,figsize=([7*cm,10*cm]),sharex=True,sharey=True,constrained_layout=False,dpi=1000)
     fig, axs=plt.subplots(3,figsize=([7*cm,15*cm]),sharex=True,sharey=False,constrained_layout=True,dpi=1000)
@@ -1175,8 +1249,8 @@ def rmsplot(model,target,pred1,pred2,pred3,ds,domain):
     
 
     #Setting labels and stuff
-    plt.savefig("/home/au569913/DataHandling/reports/{}/{}_rms.pdf".format(domain,name),bbox_inches='tight')
-    plt.show()
+    plt.savefig("/home/au569913/DataHandling/reports/{}/{}_rms_{}.pdf".format(domain,name,domain),bbox_inches='tight')
+    #plt.show()
 #%%
 def KE_plot(KE,domain,fluc=False,KE_pred=False):
     import matplotlib.pyplot as plt
@@ -1203,7 +1277,7 @@ def KE_plot(KE,domain,fluc=False,KE_pred=False):
 
         plt.scatter(test_time,KE_pred*(u_tau**2),marker='.')
         
-    plt.savefig("/home/au569913/DataHandling/reports/{}/KE.pdf".format(domain),bbox_inches='tight')
+    plt.savefig("/home/au569913/DataHandling/reports/{}/KE_{}.pdf".format(domain,domain),bbox_inches='tight')
 
 #%%
 def KE_arrangeplot(KE_total, KE_pred_total, KE_c3,domain):
@@ -1218,10 +1292,13 @@ def KE_arrangeplot(KE_total, KE_pred_total, KE_c3,domain):
 
     test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
 
-    arr1inds = KE_total.isel(time=test_ind).values.argsort() # pick out indexes of sorted ds
-    plt.plot(np.arange(0,499,1),KE_total.isel(time=test_ind).values[arr1inds[::-1]],color='k')
-    plt.scatter(np.arange(0,499,1),KE_pred_total[arr1inds[::-1]],marker='.')
-    plt.scatter(np.arange(0,499,1),KE_c3[arr1inds[::-1]]/(u_tau**2),marker='.')
+    #arr1inds = KE_total.isel(time=test_ind).values.argsort() # pick out indexes of sorted ds
+    #plt.plot(np.arange(0,499,1),KE_total.isel(time=test_ind).values[arr1inds[::-1]],color='k')
+    arr1inds = KE_total.values.argsort() # pick out indexes of sorted ds
+    plt.plot(np.arange(0,499,1),KE_total.values[arr1inds[::-1]],color='k')
+    plt.scatter(np.arange(0,499,1),KE_pred_total[arr1inds[::-1]],marker='.',s=8)
+    plt.scatter(np.arange(0,499,1),KE_c3[arr1inds[::-1]]/(u_tau**2),marker='.',s=8)
     plt.ylabel(r'$TKE^{+}$')
+    plt.legend(['DNS','AE','POD'])
 
     plt.savefig("/home/au569913/DataHandling/reports/{}/KE_arranged.pdf".format(domain),bbox_inches='tight')

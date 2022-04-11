@@ -59,8 +59,10 @@ def predict(model_name,overwrite,model,y_plus,var,target,normalized):
 
         print("Saved data",flush=True)
 
-def predictxr(model_name, model):
-    """Uses a trained model to predict with. NEED TO BE RUN WHILE zarr IS CURRENT model
+def predictxr(model_name, model, domain):
+    """Uses a trained model to predict with. 
+    NEED TO BE RUN WHILE zarr/index IS CURRENT model.
+    This is because the target values are saved straight from xarray ds loading. 
 
     Args:
         model_name (str): the namen given to the model by Wandb
@@ -74,7 +76,8 @@ def predictxr(model_name, model):
     from DataHandling import utility
     import numpy as np
     import os
-    ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/data.zarr")
+    print('Loading ds and selecting train/val/test index')
+    ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
     ds=ds.isel(y=slice(0, 32)) #Reduce y-dim from 65 to 32 as done by nakamura
     u_tau = 0.05
     ds = preprocess.flucds(ds)/u_tau
@@ -87,6 +90,7 @@ def predictxr(model_name, model):
     test = ds.isel(time = test_ind)
 
     #Convert to np array
+    print('Converting to numpy array')
     train_np=np.stack((train['u_vel'].values,train['v_vel'].values,train['w_vel']),axis=-1) #use values to pick data as np array and stack that shit
     valid_np=np.stack((valid['u_vel'].values,valid['v_vel'].values,valid['w_vel']),axis=-1)
     test_np=np.stack((test['u_vel'].values,test['v_vel'].values,test['w_vel']),axis=-1)

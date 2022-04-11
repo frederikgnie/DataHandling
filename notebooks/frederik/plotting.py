@@ -11,7 +11,7 @@ y_plus=15
 normalized=False
 
 # Load model prediction/target
-name="deep-leaf-32"
+name="generous-flower-36"
 
 model=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name))
 #model.summary()
@@ -24,7 +24,7 @@ target_list=[targ["train"],targ["val"],targ["test"]]
 predctions=[pred["train"],pred["val"],pred["test"]]
 #%%
 import xarray as xr
-domain = 'nakamura'
+domain = 'blonigan'
 ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
 #ds=ds.isel(y=slice(0, 32))
 
@@ -49,8 +49,7 @@ KE_total = KE_total/(u_tau**2) #nondimensionalize
 KE_min = KE_total.isel(time=KE_total.argmin()).coords['time'].values #index 
 KE_max = KE_total.isel(time=KE_total.argmax()).coords['time'].values #index
 #Predictions to be scattered if needed
-#data = predctions[2] #pick out train/val/test
-#KE_pred_total=postprocess.KE_np(data,ds)
+#KE_pred_total=postprocess.KE_np(predctions[2],ds) #pick out train/val/test
 plots.KE_plot(KE_total,domain,fluc=False,KE_pred=False)
 # %% Isocountours  #######
 from DataHandling import postprocess
@@ -58,42 +57,62 @@ from DataHandling import plots
 import importlib
 importlib.reload(postprocess)
 importlib.reload(plots)
-
 #data = ds['u_vel'][200].values #pick vel field
 #plots.isocon(data,ds,'u_vel=200','nakamura','Qcrit')
 
-#%% Min/max kinetic energy
+#%% Min/max kinetic energy isocontours of q crit
 importlib.reload(postprocess)
 importlib.reload(plots)
 #Nakamura
 #KE_max = 3003.
 #KE_min = 16182 
+#Blonigan
+KE_max = 4269
+KE_min = 13056
 
 data = postprocess.Qcrit('ds',ds,KE_max) # Calc q-criterion
-plots.isocon(data,ds,'t=3003',domain,'Qcrit')
+plots.isocon(data,ds,KE_max,domain,'Qcrit')
 data = postprocess.Qcrit('ds',ds,KE_min) # Calc q-criterion
-plots.isocon(data,ds,'t=16182',domain,'Qcrit')
+plots.isocon(data,ds,KE_min,domain,'Qcrit')
 
-#%% Prediction target plots
-exit()
+#%%
 ds=ds.isel(y=slice(0, 32))
+
+#%% Prediction target plots uslice
+
 #velocity
 import DataHandling
 from DataHandling import plots
 import importlib
 importlib.reload(plots)
-plots.uslice(predctions,target_list,'wheretosave',ds,'z')
-#%% Isocon For target/pred
-data = postprocess.Qcrit(target_list[2],ds,30) # Calc q-criterion
+plots.uslice(predctions[2],target_list[2],'CNNAE',domain,'z')
+plots.uslice(predctions[2],target_list[2],'CNNAE',domain,'y')
+
+#%% Isocon For target/pred of test_ind
+from DataHandling import postprocess
+importlib.reload(plots)
+u_tau=0.05
+test_ind_toplot = 1 #30   #test_ind[208]=ind number 305 in time = time 3918 
+data = postprocess.Qcrit(target_list[2]*u_tau,ds,test_ind_toplot) # Calc q-criterion
 plots.isocon(data,ds,'Target',domain,'Qcrit')
-data = postprocess.Qcrit(predctions[2],ds,30) # Calc q-criterion
+data = postprocess.Qcrit(predctions[2]*u_tau,ds,test_ind_toplot) # Calc q-criterion
 plots.isocon(data,ds,'Prediction',domain,'Qcrit')
 
-#%% Arranged KE plot
+#%% Arranged TKE plot
 from DataHandling import POD
+from DataHandling import postprocess
+from DataHandling.features import preprocess
+test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+u_tau=0.05
+TKE_total=postprocess.KE_ds(preprocess.flucds(ds.isel(time=test_ind)))/(u_tau**2) #calculate 
+TKE_pred_total=postprocess.KE_np(predctions[2],ds)
 modes = 24
 c3,d3 = POD.projectPOD(modes,domain)
-KE_c3 = postprocess.KE_np(c3,ds)
-plots.KE_arrangeplot(KE_total, KE_pred_total, KE_c3)
+TKE_c3 = postprocess.KE_np(c3,ds)
+plots.KE_arrangeplot(TKE_total, TKE_pred_total, TKE_c3,domain)
 
 
+
+
+
+# %%
