@@ -1085,3 +1085,27 @@ def nakamura1pi2(input_features, output_features, tf_records, activation='relu')
         autoencoder = Model(inputs=input_list,outputs=x_final)
 
     return autoencoder
+
+def scae(l1, activation='relu'):
+    from tensorflow import keras
+    import tensorflow as tf
+    from keras.layers import Input, Add, Conv3D, MaxPooling3D, UpSampling3D, Reshape, ActivityRegularization
+    from keras.models import Model
+
+    input_img = Input(shape=(32,32,32,3))
+ 
+
+    #Multi-scale model (Du et al., 2018)
+    x1 = Conv3D(6, (3,3,3),activation=activation, padding='same')(input_img)
+    x1 = Conv3D(9, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(12, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = ActivityRegularization(l1=l1)(x1)
+    x1 = Conv3D(9, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(6, (3,3,3),activation=activation, padding='same')(x1)
+    x_final = Conv3D(3, (3,3,3),padding='same')(x1)
+
+    autoencoder = Model(input_img, x_final) #original
+    return autoencoder
+    
+
+    

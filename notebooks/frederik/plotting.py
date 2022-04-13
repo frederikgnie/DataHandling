@@ -11,9 +11,10 @@ y_plus=15
 normalized=False
 
 # Load model prediction/target
-name="generous-flower-36"
-
+name="mild-pine-42" #l1=1e-5
+model_type = 'SCAE'
 model=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name))
+
 #model.summary()
 #pred = np.load('/home/au569913/DataHandling/models/output/{}/y_plus_15-VARS-u_vel_v_vel_w_vel-TARGETS-u_tar_v_tar_w_tar/predictions.npz'.format(name))
 #targ = np.load('/home/au569913/DataHandling/models/output/{}/y_plus_15-VARS-u_vel_v_vel_w_vel-TARGETS-u_tar_v_tar_w_tar/targets.npz'.format(name))
@@ -22,7 +23,7 @@ targ = np.load('/home/au569913/DataHandling/models/output/{}/targets.npz'.format
 
 target_list=[targ["train"],targ["val"],targ["test"]]
 predctions=[pred["train"],pred["val"],pred["test"]]
-#%%
+#%% GENERAL PLOTS FOR THE DOMAIN (NO-MODEL) %%%%%%%%%
 import xarray as xr
 domain = 'blonigan'
 ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
@@ -75,7 +76,7 @@ plots.isocon(data,ds,KE_max,domain,'Qcrit')
 data = postprocess.Qcrit('ds',ds,KE_min) # Calc q-criterion
 plots.isocon(data,ds,KE_min,domain,'Qcrit')
 
-#%%
+#%%  MODEL SPECIFIC %%%%%%%%%
 ds=ds.isel(y=slice(0, 32))
 
 #%% Prediction target plots uslice
@@ -96,7 +97,7 @@ test_ind_toplot = 1 #30   #test_ind[208]=ind number 305 in time = time 3918
 data = postprocess.Qcrit(target_list[2]*u_tau,ds,test_ind_toplot) # Calc q-criterion
 plots.isocon(data,ds,'Target',domain,'Qcrit')
 data = postprocess.Qcrit(predctions[2]*u_tau,ds,test_ind_toplot) # Calc q-criterion
-plots.isocon(data,ds,'Prediction',domain,'Qcrit')
+plots.isocon(data,ds,'AE prediction',domain,'Qcrit')
 
 #%% Arranged TKE plot
 from DataHandling import POD
@@ -112,7 +113,3 @@ TKE_c3 = postprocess.KE_np(c3,ds)
 plots.KE_arrangeplot(TKE_total, TKE_pred_total, TKE_c3,domain)
 
 
-
-
-
-# %%

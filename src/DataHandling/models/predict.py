@@ -59,7 +59,7 @@ def predict(model_name,overwrite,model,y_plus,var,target,normalized):
 
         print("Saved data",flush=True)
 
-def predictxr(model_name, model, domain):
+def predictxr(model_name, model, domain, network):
     """Uses a trained model to predict with. 
     NEED TO BE RUN WHILE zarr/index IS CURRENT model.
     This is because the target values are saved straight from xarray ds loading. 
@@ -76,6 +76,7 @@ def predictxr(model_name, model, domain):
     from DataHandling import utility
     import numpy as np
     import os
+    from tensorflow import keras
     print('Loading ds and selecting train/val/test index')
     ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
     ds=ds.isel(y=slice(0, 32)) #Reduce y-dim from 65 to 32 as done by nakamura
@@ -111,5 +112,13 @@ def predictxr(model_name, model, domain):
         os.makedirs(output_path)
     np.savez_compressed(os.path.join(output_path,"predictions"),train=predctions[0],val=predctions[1],test=predctions[2])
     np.savez_compressed(os.path.join(output_path,"targets"),train=target_list[0],val=target_list[1],test=target_list[2])
+      
+    if network == 'SCAE':
+        #keras function can return intermediate layer output
+        keras_function = keras.backend.function([model.input], [model.layers[4].output])
+        comp_train = keras_function([train_np])[0] #shape (499,32,32,32,12)
+        comp_valid = keras_function([valid_np])[0] #shape (499,32,32,32,12)
+        comp_test = keras_function([test_np])[0] #shape (499,32,32,32,12)
+        
+        np.savez_compressed(os.path.join(output_path,"comp"),train=comp_train,val=comp_valid,test=comp_test)
     print("Saved data",flush=True)
-    

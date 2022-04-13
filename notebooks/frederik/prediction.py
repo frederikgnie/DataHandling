@@ -17,9 +17,10 @@ import matplotlib.pyplot as plt
 from DataHandling.models import predict
 #%% Inputs ###
 tf_records = False
-name="noble-wind-39"
+name='fragrant-flower-71'
 model=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name))
-domain = '1pi'
+domain = 'blonigan'
+model_type = 'SCAE'
 
 overwrite=False
 vars=['u_vel','v_vel','w_vel']
@@ -27,7 +28,6 @@ target = ['u_tar','v_tar','w_tar']
 normalize=False
 y_plus=15
 
-latent = 2
 
 
 #%% Thor style
@@ -38,7 +38,7 @@ if tf_records == True:
 # %% fgn style
 if tf_records == False:
 
-    pred = predict.predictxr(name, model, domain) #needs to have correct zarr/index save
+    pred = predict.predictxr(name, model, domain, model_type) #needs to have correct zarr/index save
     
     
 # # %% plot figure

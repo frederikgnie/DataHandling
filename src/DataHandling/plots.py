@@ -1032,14 +1032,14 @@ def uslice(predctions,target_list,name,domain,dim,save=True):
 
     fig, axs=plt.subplots(2,figsize=([7*cm,10*cm]),sharex=True,sharey=True,constrained_layout=False,dpi=1000)
     #Target
-    pcm=axs[0].contourf(x,y,z1,levels=200,cmap='jet')
-    axs[0].contourf(x,y,z1,levels=200,cmap='jet')
+    pcm=axs[0].contourf(x,y,z1,levels=200,cmap='jet', vmin=min([z1.min(), z2.min()]), vmax=max([z1.max(), z2.max()]))
+    axs[0].contourf(x,y,z1,levels=200,cmap='jet', vmin=min([z1.min(), z2.min()]), vmax=max([z1.max(), z2.max()])) #twice bc it apparently helps with removing white lines
     axs[0].set_title(name,weight="bold") #title
     axs[0].set_ylabel(r'${}^{{+}}$'.format(dim))
 
     #prediction
-    axs[1].contourf(x,y,z2,levels=200,cmap='jet')
-    axs[1].contourf(x,y,z2,levels=200,cmap='jet')
+    axs[1].contourf(x,y,z2,levels=200,cmap='jet', vmin=min([z1.min(), z2.min()]), vmax=max([z1.max(), z2.max()]))
+    axs[1].contourf(x,y,z2,levels=200,cmap='jet', vmin=min([z1.min(), z2.min()]), vmax=max([z1.max(), z2.max()])) #twice bc it apparently helps with removing white lines
     axs[1].set_xlabel(r'$x^{+}$')
     axs[1].set_ylabel(r'${}^{{+}}$'.format(dim))
 
@@ -1052,6 +1052,7 @@ def uslice(predctions,target_list,name,domain,dim,save=True):
             transform=axs[1].transAxes,rotation=90,weight="bold")
     fig.subplots_adjust(wspace=-0.31,hspace=0.25)
     cbar=fig.colorbar(pcm,ax=axs[:],aspect=20,shrink=1.0,location="bottom",pad=0.2)
+    #cbar=fig.colorbar(cax=axs[:],aspect=20,shrink=1.0,location="bottom",pad=0.2)
     cbar.formatter.set_powerlimits((0, 0))
     ticks = np.linspace(int(min([z1.min() ,z2.min()])), int(max([z1.max() ,z2.max()])), 5, endpoint=True)
     #cbar.set_ticks([-5 -2.5, 0.0, 2.5, 5]), cbar.set_ticklabels([-5 -2.5, 0.0, 2.5, 5])
@@ -1063,7 +1064,7 @@ def uslice(predctions,target_list,name,domain,dim,save=True):
         plt.savefig("/home/au569913/DataHandling/reports/{}/uslice_{}_{}.pdf".format(domain,name,dim),bbox_inches='tight')
     plt.show()
 
-def isocon(data,ds,name,domain,type):
+def isocon(data,ds,name,domain,type,save=True):
     """"3D isocontour
 
     Args:
@@ -1189,12 +1190,13 @@ def isocon(data,ds,name,domain,type):
         pad = 0
     )
 )
-    fig.write_image("/home/au569913/DataHandling/reports/{}/{}_isocon.pdf".format(domain,name),format='pdf')
+    if save == True:
+        fig.write_image("/home/au569913/DataHandling/reports/{}/{}_isocon.pdf".format(domain,name),format='pdf')
     fig.show(renderer="svg")
     #fig.show()
     
 #%%
-def rmsplot(model,target,pred1,pred2,pred3,ds,domain):
+def rmsplot(model,target,pred1,pred2,pred3,ds,domain,save=True):
     from DataHandling.features import preprocess
     import matplotlib.pyplot as plt
     rms_tar = preprocess.rms(target)
@@ -1249,7 +1251,8 @@ def rmsplot(model,target,pred1,pred2,pred3,ds,domain):
     
 
     #Setting labels and stuff
-    plt.savefig("/home/au569913/DataHandling/reports/{}/{}_rms_{}.pdf".format(domain,name,domain),bbox_inches='tight')
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/{}_rms_{}.pdf".format(domain,name,domain),bbox_inches='tight')
     #plt.show()
 #%%
 def KE_plot(KE,domain,fluc=False,KE_pred=False):
@@ -1302,3 +1305,133 @@ def KE_arrangeplot(KE_total, KE_pred_total, KE_c3,domain):
     plt.legend(['DNS','AE','POD'])
 
     plt.savefig("/home/au569913/DataHandling/reports/{}/KE_arranged.pdf".format(domain),bbox_inches='tight')
+
+def scaemode(comp,name,domain,dim,save=True):
+    """"2D slice plot 4 scae mode
+
+    Args:
+        comp (array): 
+        names (list): list of the names of the data. Normally train,validaiton,test
+        name (str): name of save
+        ds (xrray)
+        dim (str): dimension to slice
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.collections import LineCollection
+    import matplotlib
+    import seaborn as sns
+    import xarray as xr
+    import numpy as np
+    sns.set_theme()
+    sns.set_style("ticks")
+    sns.set_context("paper")
+    ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
+    ds=ds.isel(y=slice(0, 32))
+    #x, y = np.meshgrid(ds['x'].values, ds['y'].values)
+    x = ds['x'].values
+    y = ds['y'].values
+    z = ds['z'].values
+
+    u_tau = 0.05
+    nu = 0.0004545454545
+    
+    x = x*(u_tau/nu)
+    y = abs(y-y.max())*(u_tau/nu) #y_plus
+    z = (z + (-z[0]))*(u_tau/nu)
+    xtitle = r'$x^{+}$'
+    if dim == 'y':
+    #Create meshgrid
+        x, y = np.meshgrid(x, y, indexing='xy')
+    elif dim == 'z':
+        x, y = np.meshgrid(x, z, indexing='xy')
+    
+
+
+    #plt.scatter(x, y,0.1)
+    #segs1 = np.stack((x,y), axis=2)
+    #segs2 = segs1.transpose(1,0,2)
+    #plt.gca().add_collection(LineCollection(segs1))
+    #plt.gca().add_collection(LineCollection(segs2))
+
+    time = 100
+    #z = ds.isel(time=200,z=16)['u_vel'].values.T
+    if dim == 'y':
+        z1 = comp[time,:,:,16,0].T
+        z2 = comp[time,:,:,16,1].T
+        z3 = comp[time,:,:,16,2].T
+        z4 = comp[time,:,:,16,3].T
+        
+    if dim == 'z':
+        z1 = comp[time,:,16,:,0].T
+        z2 = comp[time,:,16,:,1].T
+        z3 = comp[time,:,16,:,2].T
+        z4 = comp[time,:,16,:,3].T
+        
+
+    cm = 1/2.54  # centimeters in inches
+    #name='test'
+
+    fig, axs=plt.subplots(2,2,figsize=([12*cm,10*cm]),sharex=True,sharey=True,constrained_layout=False,dpi=1000)
+    vmin = min([z1.min(), z2.min(), z3.min(), z4.min()])
+    vmax = max([z1.max(), z2.max(), z3.max(), z4.max()])
+    max_ax = np.argmax([z1.max(), z2.max(), z3.max(), z4.max()]) #if time scale colorbar pcm to the axs containing highest z value
+    print(max_ax)
+    #Mode 1
+    pcm=axs[0,0].contourf(x,y,z1,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    #axs[0].set_title(name,weight="bold") #title
+    axs[0,0].set_ylabel(r'${}^{{+}}$'.format(dim))
+
+    #Mode 2
+    axs[1,0].contourf(x,y,z2,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    axs[1,0].set_xlabel(r'$x^{+}$')
+    axs[1,0].set_ylabel(r'${}^{{+}}$'.format(dim))
+
+    #Mode 3
+    axs[0,1].contourf(x,y,z3,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    #axs[2].set_xlabel(r'$x^{+}$')
+    #axs[2].set_ylabel(r'${}^{{+}}$'.format(dim))
+
+    #Mode 4
+    axs[1,1].contourf(x,y,z4,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    axs[1,1].set_xlabel(r'$x^{+}$')
+    #axs[2].set_ylabel(r'${}^{{+}}$'.format(dim))
+
+    #Decide which one to use for colorbar
+    if max_ax == 0:
+        pcm=axs[0,0].contourf(x,y,z1,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    elif max_ax == 1:
+        pcm=axs[1,0].contourf(x,y,z2,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    elif max_ax == 2:
+        pcm=axs[0,1].contourf(x,y,z3,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    elif max_ax == 3:
+        pcm=axs[1,1].contourf(x,y,z4,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+
+    #pcm = matplotlib.cm.ScalarMappable(cmap='jet')
+    #pcm = matplotlib.contour.ContourSet(axs[:,:],levels=200)
+    #Setting labels and stuff
+    axs[0,0].text(-0.35, 0.20, 'Mode 1',
+            verticalalignment='bottom', horizontalalignment='right',
+            transform=axs[0,0].transAxes,rotation=90,weight="bold")
+    axs[1,0].text(-0.35, 0.20, 'Mode 2',
+            verticalalignment='bottom', horizontalalignment='right',
+            transform=axs[1,0].transAxes,rotation=90,weight="bold")
+    axs[0,1].text(-0.08, 0.20, 'Mode 3',
+            verticalalignment='bottom', horizontalalignment='right',
+            transform=axs[0,1].transAxes,rotation=90,weight="bold")
+    axs[1,1].text(-0.08, 0.20, 'Mode 4',
+            verticalalignment='bottom', horizontalalignment='right',
+            transform=axs[1,1].transAxes,rotation=90,weight="bold")
+    #fig.subplots_adjust(wspace=-0.31,hspace=0.25)
+    ticks = np.linspace(vmin, vmax, 5, endpoint=True)
+    cbar=fig.colorbar(pcm,ax=axs[:,:],aspect=20,shrink=1.0,location="bottom",pad=0.2,
+    format="%.2e",spacing='uniform',ticks=ticks)
+    #cbar=fig.colorbar(cax=axs[:],aspect=20,shrink=1.0,location="bottom",pad=0.2)
+    #cbar.formatter.set_powerlimits((0, 0))
+    ticks = np.linspace(vmin, vmax, 5, endpoint=True)
+    #cbar.set_ticks([-5 -2.5, 0.0, 2.5, 5]), cbar.set_ticklabels([-5 -2.5, 0.0, 2.5, 5])
+    print(ticks)
+    #cbar.set_ticks(ticks), cbar.set_ticklabels(ticks)
+    #cbar.ax.set_xlabel(r"$u^{'+}$",rotation=0)
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/scaemode_{}_{}.pdf".format(domain,name,dim),bbox_inches='tight')
+    plt.show()

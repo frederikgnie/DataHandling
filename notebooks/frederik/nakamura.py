@@ -6,7 +6,7 @@ import os
 import numpy as np
 from pyexpat import model
 from tensorflow import keras
-from keras import layers
+#from keras import layers, optimizers
 import tensorflow as tf
 import wandb
 from wandb.keras import WandbCallback
@@ -16,19 +16,24 @@ from DataHandling.models import models
 
 os.environ['WANDB_DISABLE_CODE']='True'
 
-wandbnotes = "1pi2"
+wandbnotes = "blonigan SCAE l1=1e1, adaptive lr, old weights"
 tf_records = False #utilise tf_records aproach or not
 
 batch_size=32
 activation='relu'
-optimizer="adam"
+lr = 0.0001
+optimizer=keras.optimizers.Adam(learning_rate=lr)
+#optimizer=keras.optimizers.SGD(learning_rate=0.00001, momentum=0.8)
+#optimizer=keras.optimizers.RMSprop(learning_rate=0.00001, momentum=0.8)
+#optimizer ='adam'
 loss='mean_squared_error'
-patience=50
-epochs = 5000
+patience = 50
+epochs = 2000
 
-model_type="nakamura2"
+model_type="SCAE"
+l1 = 1e1 #l1 norm weighting
 plus_fluc = True
-domain = '1pi'
+domain = 'blonigan'
 
 #
 #y_plus=15
@@ -55,27 +60,31 @@ if tf_records == True:
 #%% Load data from xarray approach:
 if tf_records == False:
     import xarray as xr
-    ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
-    ds=ds.isel(y=slice(0, 32)) #Reduce y-dim from 65 to 32 as done by nakamura
-    u_tau = 0.05
-    ds = preprocess.flucds(ds)/u_tau
-    #train_ind, validation_ind, test_ind = preprocess.split_test_train_val(ds) #find indexes
-    train_ind=np.load("/home/au569913/DataHandling/data/interim/train_ind.npy")
-    validation_ind =np.load("/home/au569913/DataHandling/data/interim/valid_ind.npy")
-    test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+    #print('Opening ds')
+    #ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
+    #ds=ds.isel(y=slice(0, 32)) #Reduce y-dim from 65 to 32 as done by nakamura
+    #u_tau = 0.05
+    #ds = preprocess.flucds(ds)/u_tau
+    ##train_ind, validation_ind, test_ind = preprocess.split_test_train_val(ds) #find indexes
+    #train_ind=np.load("/home/au569913/DataHandling/data/interim/train_ind.npy")
+    #validation_ind =np.load("/home/au569913/DataHandling/data/interim/valid_ind.npy")
+    #test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+#
+    #train = ds.isel(time = train_ind)
+    #validation = ds.isel(time = validation_ind)
+    #test = ds.isel(time = train_ind)
+#
+    ##Convert to np array
+    #print('Converting to numpy array')
+    #train=np.stack((train['u_vel'].values,train['v_vel'].values,train['w_vel']),axis=-1) #use values to pick data as np array and stack that shit
+    #validation = np.stack((validation['u_vel'].values,validation['v_vel'].values,validation['w_vel']),axis=-1)
 
-    train = ds.isel(time = train_ind)
-    validation = ds.isel(time = validation_ind)
-    test = ds.isel(time = train_ind)
-
-    #Convert to np array
-    print('Coverting to numpy array')
-    train=np.stack((train['u_vel'].values,train['v_vel'].values,train['w_vel']),axis=-1) #use values to pick data as np array and stack that shit
-    validation = np.stack((validation['u_vel'].values,validation['v_vel'].values,validation['w_vel']),axis=-1)
-
+    train = np.load("/home/au569913/DataHandling/data/numpy/{}/train.npy".format(domain))
+    validation = np.load("/home/au569913/DataHandling/data/numpy/{}/validation.npy".format(domain))
 #%% Model
 print('Building model')
-model=models.nakamura1pi2(var,target,tf_records,activation)
+#model=models.nakamura(var,target,tf_records,activation)
+model=models.scae(l1, activation='relu')
 
 
 #%% Initialise WandB & run
@@ -94,6 +103,8 @@ config.model=model_type
 config.plus_fluc=plus_fluc
 config.domain=domain
 config.tf_records=tf_records
+if model_type == 'SCAE':
+    config.lr_intital=lr
 
 
 #config.y_plus=y_plus
@@ -113,6 +124,14 @@ logdir, backupdir= utility.get_run_dir(wandb.run.name)
 #Callbacks
 backup_cb=tf.keras.callbacks.ModelCheckpoint(os.path.join(backupdir,'weights.{epoch:02d}'),save_best_only=False)
 early_stopping_cb = keras.callbacks.EarlyStopping(patience=patience,restore_best_weights=True)
+reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1,
+                              patience=10, min_lr=0.00001)
+
+#name_old='fragrant-flower-71'
+name_old='fearless-shadow-54'
+old=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name_old))
+model.set_weights(old.get_weights()) 
+
 
 #Model fit
 if tf_records == True:  
@@ -121,7 +140,7 @@ if tf_records == True:
 
 #fgn version which utlisized format of xarray to np array
 if tf_records == False:
-    model.fit(x=train,y=train,batch_size=batch_size,epochs=epochs,validation_data=[validation, validation],callbacks=[WandbCallback(),early_stopping_cb,backup_cb])
+    model.fit(x=train,y=train,batch_size=batch_size,epochs=epochs,validation_data=[validation, validation],callbacks=[WandbCallback(),early_stopping_cb,backup_cb,reduce_lr])
 
 #Model save
 model.save(os.path.join("/home/au569913/DataHandling/models/trained",wandb.run.name))
