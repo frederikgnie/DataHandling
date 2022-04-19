@@ -16,7 +16,7 @@ from DataHandling.models import models
 
 os.environ['WANDB_DISABLE_CODE']='True'
 
-wandbnotes = "blonigan SCAE l1=1e1, adaptive lr, old weights"
+wandbnotes = "blonigan SCAE2 l1=1e-3"
 tf_records = False #utilise tf_records aproach or not
 
 batch_size=32
@@ -30,8 +30,8 @@ loss='mean_squared_error'
 patience = 50
 epochs = 2000
 
-model_type="SCAE"
-l1 = 1e1 #l1 norm weighting
+model_type="SCAE2"
+l1 = 1e-3 #l1 norm weighting
 plus_fluc = True
 domain = 'blonigan'
 
@@ -84,7 +84,7 @@ if tf_records == False:
 #%% Model
 print('Building model')
 #model=models.nakamura(var,target,tf_records,activation)
-model=models.scae(l1, activation='relu')
+model=models.scae2(l1, activation='relu')
 
 
 #%% Initialise WandB & run
@@ -105,6 +105,7 @@ config.domain=domain
 config.tf_records=tf_records
 if model_type == 'SCAE':
     config.lr_intital=lr
+    config.l1=l1
 
 
 #config.y_plus=y_plus
@@ -125,12 +126,13 @@ logdir, backupdir= utility.get_run_dir(wandb.run.name)
 backup_cb=tf.keras.callbacks.ModelCheckpoint(os.path.join(backupdir,'weights.{epoch:02d}'),save_best_only=False)
 early_stopping_cb = keras.callbacks.EarlyStopping(patience=patience,restore_best_weights=True)
 reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1,
-                              patience=10, min_lr=0.00001)
+                              patience=10, min_lr=0.000001)
 
 #name_old='fragrant-flower-71'
-name_old='fearless-shadow-54'
-old=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name_old))
-model.set_weights(old.get_weights()) 
+#name_old='fearless-shadow-54'
+#name_old='dandy-bush-79'
+#old=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name_old))
+#model.set_weights(old.get_weights()) 
 
 
 #Model fit

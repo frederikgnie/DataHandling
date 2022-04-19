@@ -12,6 +12,10 @@ normalized=False
 
 # Load model prediction/target
 name="mild-pine-42" #l1=1e-5
+name = 'fearless-shadow-54' #l1=1e-3
+name = 'fragrant-flower-71' #l1=1
+name = 'northern-capybara-82' #l1=1e2
+
 model_type = 'SCAE'
 model=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name))
 
@@ -25,7 +29,7 @@ target_list=[targ["train"],targ["val"],targ["test"]]
 predctions=[pred["train"],pred["val"],pred["test"]]
 #%% GENERAL PLOTS FOR THE DOMAIN (NO-MODEL) %%%%%%%%%
 import xarray as xr
-domain = 'blonigan'
+domain = 'nakamura'
 ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
 #ds=ds.isel(y=slice(0, 32))
 
@@ -66,15 +70,34 @@ importlib.reload(postprocess)
 importlib.reload(plots)
 #Nakamura
 #KE_max = 3003.
-#KE_min = 16182 
+#KE_min = 5367 
 #Blonigan
-KE_max = 4269
-KE_min = 13056
+#KE_max = 4269
+#KE_min = 13056
 
 data = postprocess.Qcrit('ds',ds,KE_max) # Calc q-criterion
 plots.isocon(data,ds,KE_max,domain,'Qcrit')
 data = postprocess.Qcrit('ds',ds,KE_min) # Calc q-criterion
 plots.isocon(data,ds,KE_min,domain,'Qcrit')
+#Isocontour for time of least Q-crit in flow (blonigan)
+#t_least = 3846
+#data = postprocess.Qcrit('ds',ds,t_least)
+#plots.isocon(data,ds,t_least,domain,'Qcrit')
+#%% Find times where Q-crit is highest
+Qlist = []
+for i in np.linspace(3003,6000,1000):
+    Qlist.append(np.sum(postprocess.Qcrit('ds',ds,i)))
+
+
+#%%
+#Qmax/min_time 
+# #nakamura: 5703,3636
+Qmax = max(Qlist)
+Qmax_ind = np.argmax(Qlist)
+Qmax_time = np.linspace(3003,6000,1000)[Qmax_ind]
+Qmin_ind = min(Qlist)
+Qmin_ind = np.argmin(Qlist)
+Qmin_time = np.linspace(3003,6000,1000)[Qmin_ind]
 
 #%%  MODEL SPECIFIC %%%%%%%%%
 ds=ds.isel(y=slice(0, 32))
@@ -86,8 +109,8 @@ import DataHandling
 from DataHandling import plots
 import importlib
 importlib.reload(plots)
-plots.uslice(predctions[2],target_list[2],'CNNAE',domain,'z')
-plots.uslice(predctions[2],target_list[2],'CNNAE',domain,'y')
+plots.uslice(predctions[2],target_list[2],model_type,domain,'z')
+plots.uslice(predctions[2],target_list[2],model_type,domain,'y')
 
 #%% Isocon For target/pred of test_ind
 from DataHandling import postprocess
@@ -97,7 +120,7 @@ test_ind_toplot = 1 #30   #test_ind[208]=ind number 305 in time = time 3918
 data = postprocess.Qcrit(target_list[2]*u_tau,ds,test_ind_toplot) # Calc q-criterion
 plots.isocon(data,ds,'Target',domain,'Qcrit')
 data = postprocess.Qcrit(predctions[2]*u_tau,ds,test_ind_toplot) # Calc q-criterion
-plots.isocon(data,ds,'AE prediction',domain,'Qcrit')
+plots.isocon(data,ds,'SCAE prediction',domain,'Qcrit')
 
 #%% Arranged TKE plot
 from DataHandling import POD

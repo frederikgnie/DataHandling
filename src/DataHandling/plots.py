@@ -923,7 +923,7 @@ def stat_plots(mean_dataset_loc,batches):
 
 #--- fgn --#
 
-def dsfield(ds,domain,dim='y'):
+def dsfield(ds,domain,dim='y',save=True):
     """"2D u velocity slice 
 
     Args:
@@ -937,6 +937,8 @@ def dsfield(ds,domain,dim='y'):
     ds.coords['x']=ds.coords['x']*(u_tau/nu)
     ds.coords['y'] = abs(ds.coords['y']-ds.coords['y'].max())*(u_tau/nu) #y_plus
     ds.coords['z'] = (ds.coords['z'] + (-ds.coords['z'][0]))*(u_tau/nu)
+    #ds['u_vel']=ds['u_vel']/ds['u_vel'].max()
+    print('done coords')
     if dim=='y':
         time = 4200 # ind=400
         y = 1.882 # ind = 10
@@ -946,14 +948,15 @@ def dsfield(ds,domain,dim='y'):
         z = 0
         uin = ds.u_vel.isel(time=0,z=16)
 
-
+    uin = uin/uin.max()
     fig = plt.figure()
     ax = fig.add_subplot(111)
     cbar_frac = 0.025 if dim == 'y' else 0.025
-    uin.T.plot.contourf(ax=ax,levels=200,cmap='jet',vmin=0, cbar_kwargs={'fraction':cbar_frac})
-    
+    levels = [0, 0.2, 0.4, 0.6, 0.8, 1]
+    uin.T.plot.contourf(ax=ax,levels=200,cmap='jet',vmin=0, cbar_kwargs={'fraction':cbar_frac, 'ticks':levels})
+    ('done plot')
     #fig.axes[1].remove()
-    fig.axes[1].set_ylabel(r'$u$')
+    fig.axes[1].set_ylabel(r'$u/u_{max}$')
     ax.set_aspect('equal')
     ax.set_title(r'$t_{{e}}={:.0f},{}^{{+}}={:.2f}$'.format(uin.coords['time'].values,dim,uin.coords[dim].values))
     if dim == 'y':
@@ -961,8 +964,8 @@ def dsfield(ds,domain,dim='y'):
     elif dim == 'z':
         ax.set_ylabel(r'${}^{{+}}$'.format('y'))
     ax.set_xlabel(r'$x^{+}$')
-
-    plt.savefig("/home/au569913/DataHandling/reports/{}/{}_dsfield_{}.png".format(domain,dim,domain),bbox_inches='tight')
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/{}_dsfield_{}.png".format(domain,dim,domain),bbox_inches='tight')
 
 
 def uslice(predctions,target_list,name,domain,dim,save=True):

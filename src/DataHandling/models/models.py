@@ -1094,12 +1094,41 @@ def scae(l1, activation='relu'):
 
     input_img = Input(shape=(32,32,32,3))
  
-
-    #Multi-scale model (Du et al., 2018)
     x1 = Conv3D(6, (3,3,3),activation=activation, padding='same')(input_img)
     x1 = Conv3D(9, (3,3,3),activation=activation, padding='same')(x1)
     x1 = Conv3D(12, (3,3,3),activation=activation, padding='same')(x1)
     x1 = ActivityRegularization(l1=l1)(x1)
+    x1 = Conv3D(9, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(6, (3,3,3),activation=activation, padding='same')(x1)
+    x_final = Conv3D(3, (3,3,3),padding='same')(x1)
+
+    autoencoder = Model(input_img, x_final) #original
+    return autoencoder
+
+def scae2(l1, activation='relu'):
+    from tensorflow import keras
+    import tensorflow as tf
+    from keras.layers import Input, Add, Conv3D, MaxPooling3D, UpSampling3D, Reshape, ActivityRegularization
+    from keras.models import Model
+
+    input_img = Input(shape=(32,32,32,3))
+ 
+    x1 = Conv3D(6, (3,3,3),activation=activation, padding='same')(input_img)
+    x1 = Conv3D(9, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(12, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(15, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(18, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(21, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(24, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(27, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(30, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = ActivityRegularization(l1=l1)(x1)
+    x1 = Conv3D(27, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(24, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(21, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(18, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(15, (3,3,3),activation=activation, padding='same')(x1)
+    x1 = Conv3D(12, (3,3,3),activation=activation, padding='same')(x1)
     x1 = Conv3D(9, (3,3,3),activation=activation, padding='same')(x1)
     x1 = Conv3D(6, (3,3,3),activation=activation, padding='same')(x1)
     x_final = Conv3D(3, (3,3,3),padding='same')(x1)

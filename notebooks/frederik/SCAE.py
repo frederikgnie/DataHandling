@@ -5,7 +5,10 @@ from tensorflow import keras
 import numpy as np
 #name = "warm-plasma-41" #l1=1e-6
 #name = "mild-pine-42" #l1=1e-5
-name = 'fearless-shadow-54' #l1=1e-3
+#name = 'fearless-shadow-54' #l1=1e-3
+#name = 'fragrant-flower-71' #l1=1
+name = 'dandy-bush-79' #l1=1e1
+name = 'northern-capybara-82' #l1=1e2
 model=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name))
 a= model.get_weights()
 for i in range(len(a)):
@@ -14,14 +17,14 @@ for i in range(len(a)):
 
 # %% 
 comp = np.load('/home/au569913/DataHandling/models/output/{}/comp.npz'.format(name))
-comp = comp['test']
-#comp = comp['comp']
+#comp = comp['test']
+comp = comp['comp']
 #%%
 #np.nonzero(comp[1,:,:,:,:])
 import matplotlib.pyplot as plt
 lan_var = []
-for i in range(len(comp)):
-    lan_var.append(len(np.nonzero(comp[i,:,:,:,0])[0])) #last 0/1/2 seems to be the same 18851ish
+for i in range(len(comp)): #499
+    lan_var.append(np.count_nonzero(comp[i,:,:,:,:])) #last 0/1/2 seems to be the same 18851ish
 plt.plot(np.arange(0,499,1),lan_var,color='k') # plot lantent variables
 #%%
 import DataHandling
@@ -29,7 +32,7 @@ from DataHandling import plots
 import importlib
 importlib.reload(plots)
 #plots.uslice(comp,comp,model_type,domain,'y',save=False)
-plots.scaemode(comp,model_type,domain,'y',save=False)
+plots.scaemode(comp,1e-3,domain,'z',save=False)
 #%%
 import xarray as xr
 import numpy as np

@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from DataHandling.models import predict
 #%% Inputs ###
 tf_records = False
-name='fragrant-flower-71'
+name = 'dandy-bush-79' #l1=1e1
 model=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name))
 domain = 'blonigan'
 model_type = 'SCAE'

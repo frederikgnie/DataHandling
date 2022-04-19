@@ -1,7 +1,7 @@
-Machine Learning based Modeling of Near-Wall Turbulence
+Dimensionality reduction of the near minimal turbulent channel unit
 ==============================
 
-Machine Learning based Modeling of Near-Wall Turbulence
+Dimensionality reduction of the near minimal turbulent channel unit
 
 Project Organization
 ------------
