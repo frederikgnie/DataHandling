@@ -29,7 +29,7 @@ target_list=[targ["train"],targ["val"],targ["test"]]
 predctions=[pred["train"],pred["val"],pred["test"]]
 #%% GENERAL PLOTS FOR THE DOMAIN (NO-MODEL) %%%%%%%%%
 import xarray as xr
-domain = 'nakamura'
+domain = 'blonigan'
 ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
 #ds=ds.isel(y=slice(0, 32))
 
@@ -47,15 +47,23 @@ from DataHandling import plots
 import numpy as np
 import matplotlib.pyplot as plt
 u_tau = 0.05
-#ds = preprocess.flucds(ds)/u_tau   #utilise fluctuations or not
 
 KE_total=postprocess.KE_ds(ds) #calculate KE for all timesteps
 KE_total = KE_total/(u_tau**2) #nondimensionalize
-KE_min = KE_total.isel(time=KE_total.argmin()).coords['time'].values #index 
-KE_max = KE_total.isel(time=KE_total.argmax()).coords['time'].values #index
+#Pick time of highest and lowest kinetic energy
+KE_min = KE_total.isel(time=KE_total.argmin()).coords['time'].values #time
+KE_max = KE_total.isel(time=KE_total.argmax()).coords['time'].values #time
+#Pick index of snapshot with highest and lowest energy of test values
+test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+KE_min_test = KE_total.isel(time=test_ind).argmin().values #index 
+KE_max_test = KE_total.isel(time=test_ind).argmax().values #index 
+
 #Predictions to be scattered if needed
 #KE_pred_total=postprocess.KE_np(predctions[2],ds) #pick out train/val/test
 plots.KE_plot(KE_total,domain,fluc=False,KE_pred=False)
+#TKE
+TKE_total=postprocess.KE_ds(preprocess.flucds(ds))/(u_tau**2) #calculate 
+plots.KE_plot(TKE_total,domain,fluc=True,KE_pred=False)
 # %% Isocountours  #######
 from DataHandling import postprocess
 from DataHandling import plots
@@ -91,7 +99,8 @@ for i in np.linspace(3003,6000,1000):
 
 #%%
 #Qmax/min_time 
-# #nakamura: 5703,3636
+# #nakamura: 5703,3636  #blon: 3846,4401 #1pi: 
+# a = "neg" if b<0 else "pos" if b>0 else "zero"
 Qmax = max(Qlist)
 Qmax_ind = np.argmax(Qlist)
 Qmax_time = np.linspace(3003,6000,1000)[Qmax_ind]
@@ -99,11 +108,10 @@ Qmin_ind = min(Qlist)
 Qmin_ind = np.argmin(Qlist)
 Qmin_time = np.linspace(3003,6000,1000)[Qmin_ind]
 
-#%%  MODEL SPECIFIC %%%%%%%%%
+#%%  MODEL SPECIFIC %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 ds=ds.isel(y=slice(0, 32))
 
 #%% Prediction target plots uslice
-
 #velocity
 import DataHandling
 from DataHandling import plots
@@ -116,23 +124,13 @@ plots.uslice(predctions[2],target_list[2],model_type,domain,'y')
 from DataHandling import postprocess
 importlib.reload(plots)
 u_tau=0.05
-test_ind_toplot = 1 #30   #test_ind[208]=ind number 305 in time = time 3918 
+
+test_ind_toplot = 1 #30   #test_ind[208]=ind number 30 in time = time 3918 
 data = postprocess.Qcrit(target_list[2]*u_tau,ds,test_ind_toplot) # Calc q-criterion
-plots.isocon(data,ds,'Target',domain,'Qcrit')
+plots.isocon(data,ds,'Target',domain,'Qcrit',save=True)
 data = postprocess.Qcrit(predctions[2]*u_tau,ds,test_ind_toplot) # Calc q-criterion
 plots.isocon(data,ds,'SCAE prediction',domain,'Qcrit')
 
-#%% Arranged TKE plot
-from DataHandling import POD
-from DataHandling import postprocess
-from DataHandling.features import preprocess
-test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
-u_tau=0.05
-TKE_total=postprocess.KE_ds(preprocess.flucds(ds.isel(time=test_ind)))/(u_tau**2) #calculate 
-TKE_pred_total=postprocess.KE_np(predctions[2],ds)
-modes = 24
-c3,d3 = POD.projectPOD(modes,domain)
-TKE_c3 = postprocess.KE_np(c3,ds)
-plots.KE_arrangeplot(TKE_total, TKE_pred_total, TKE_c3,domain)
 
 
+#%%

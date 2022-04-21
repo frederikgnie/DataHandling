@@ -64,6 +64,7 @@ def KE_ds(ds):
     ds = ds.integrate('z')
     print('Loading ds')
     ds = ds.load() #convert to np array
+    print('Done loading')
     KE_total = ds
     return KE_total
 
@@ -99,3 +100,15 @@ def KE_np(data,ds):
     KE_pred_total = np.trapz(KE_pred_total,z,axis=2)
     KE_pred_total = -np.trapz(KE_pred_total,y,axis=1)
     return KE_pred_total
+
+def mediancomp(name):
+    import numpy as np
+    comp = np.load('/home/au569913/DataHandling/models/output/{}/comp.npz'.format(name))
+    comp = comp['test']
+    lan_var = []
+    for i in range(len(comp)): #499
+        lan_var.append(np.count_nonzero(comp[i,:,:,:,:])) #last 0/1/2 seems to be the same 18851ish
+    from statistics import mean, median 
+    mean_var = mean(lan_var)
+    median_var = median(lan_var)
+    return median_var

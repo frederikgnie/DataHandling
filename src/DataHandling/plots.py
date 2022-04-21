@@ -954,7 +954,7 @@ def dsfield(ds,domain,dim='y',save=True):
     cbar_frac = 0.025 if dim == 'y' else 0.025
     levels = [0, 0.2, 0.4, 0.6, 0.8, 1]
     uin.T.plot.contourf(ax=ax,levels=200,cmap='jet',vmin=0, cbar_kwargs={'fraction':cbar_frac, 'ticks':levels})
-    ('done plot')
+    print('done plot')
     #fig.axes[1].remove()
     fig.axes[1].set_ylabel(r'$u/u_{max}$')
     ax.set_aspect('equal')
@@ -964,8 +964,13 @@ def dsfield(ds,domain,dim='y',save=True):
     elif dim == 'z':
         ax.set_ylabel(r'${}^{{+}}$'.format('y'))
     ax.set_xlabel(r'$x^{+}$')
+
+    #Remove annoying white lines
+    for c in ax.collections:
+        c.set_edgecolor("face")
+
     if save == True:
-        plt.savefig("/home/au569913/DataHandling/reports/{}/{}_dsfield_{}.png".format(domain,dim,domain),bbox_inches='tight')
+        plt.savefig("/home/au569913/DataHandling/reports/{}/{}_dsfield_{}.pdf".format(domain,dim,domain),bbox_inches='tight')
 
 
 def uslice(predctions,target_list,name,domain,dim,save=True):
@@ -1199,8 +1204,9 @@ def isocon(data,ds,name,domain,type,save=True):
     #fig.show()
     
 #%%
-def rmsplot(model,target,pred1,pred2,pred3,ds,domain,save=True):
+def rmsplot(model,target,pred1,pred2,pred3,ds,domain,save=True,scae=[]):
     from DataHandling.features import preprocess
+    from DataHandling import postprocess
     import matplotlib.pyplot as plt
     rms_tar = preprocess.rms(target)
     rms_pred1 = preprocess.rms(pred1)
@@ -1218,13 +1224,17 @@ def rmsplot(model,target,pred1,pred2,pred3,ds,domain,save=True):
         rms_pred2 = rms_pred2/u_tau
         rms_pred3 = rms_pred3/u_tau 
 
-    
     name = model
     
     labels = ['DNS',r'$r=1536$',r'$r=192$',r'$r=24$']
 
     if domain == '1pi':
-        labels = ['DNS',r'$r=3072$',r'$r=284$',r'$r=48$']
+        labels = ['DNS',r'$r=3072$',r'$r=384$',r'$r=48$']
+    if name == 'SCAE':
+        r0 = postprocess.mediancomp(scae[0])
+        r1 = postprocess.mediancomp(scae[1])
+        r2 = postprocess.mediancomp(scae[2])
+        labels = ['DNS',r'$r={}$'.format(r0),r'$r={}$'.format(r1),r'$r={}$'.format(r2)]
     cm = 1/2.54  # centimeters in inches
     #fig, axs=plt.subplots(2,figsize=([7*cm,10*cm]),sharex=True,sharey=True,constrained_layout=False,dpi=1000)
     fig, axs=plt.subplots(3,figsize=([7*cm,15*cm]),sharex=True,sharey=False,constrained_layout=True,dpi=1000)
@@ -1258,7 +1268,7 @@ def rmsplot(model,target,pred1,pred2,pred3,ds,domain,save=True):
         plt.savefig("/home/au569913/DataHandling/reports/{}/{}_rms_{}.pdf".format(domain,name,domain),bbox_inches='tight')
     #plt.show()
 #%%
-def KE_plot(KE,domain,fluc=False,KE_pred=False):
+def KE_plot(KE,domain,fluc=False,KE_pred=False,save=True):
     import matplotlib.pyplot as plt
     import xarray as xr
     import numpy as np
@@ -1282,11 +1292,14 @@ def KE_plot(KE,domain,fluc=False,KE_pred=False):
         train_time = KE.coords['time'][train_ind]
 
         plt.scatter(test_time,KE_pred*(u_tau**2),marker='.')
-        
-    plt.savefig("/home/au569913/DataHandling/reports/{}/KE_{}.pdf".format(domain,domain),bbox_inches='tight')
+    if save == True:
+        if fluc == False:
+            plt.savefig("/home/au569913/DataHandling/reports/{}/KE_{}.pdf".format(domain,domain),bbox_inches='tight')
+        elif fluc == True:
+            plt.savefig("/home/au569913/DataHandling/reports/{}/TKE_{}.pdf".format(domain,domain),bbox_inches='tight')
 
 #%%
-def KE_arrangeplot(KE_total, KE_pred_total, KE_c3,domain):
+def KE_arrangeplot(KE_total, KE_pred_total, KE_c3, KE_scae,domain,showscae=True,save=True):
     import numpy as np
     import xarray as xr
     import matplotlib.pyplot as plt
@@ -1304,10 +1317,47 @@ def KE_arrangeplot(KE_total, KE_pred_total, KE_c3,domain):
     plt.plot(np.arange(0,499,1),KE_total.values[arr1inds[::-1]],color='k')
     plt.scatter(np.arange(0,499,1),KE_pred_total[arr1inds[::-1]],marker='.',s=8)
     plt.scatter(np.arange(0,499,1),KE_c3[arr1inds[::-1]]/(u_tau**2),marker='.',s=8)
+    if showscae == True:
+        plt.scatter(x,KE_scae[arr1inds[::-1]],marker='.',s=8)
     plt.ylabel(r'$TKE^{+}$')
-    plt.legend(['DNS','AE','POD'])
+    plt.legend(['DNS','CNNAE','POD'])
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/KE_arranged.pdf".format(domain),bbox_inches='tight')
 
-    plt.savefig("/home/au569913/DataHandling/reports/{}/KE_arranged.pdf".format(domain),bbox_inches='tight')
+def KE_arrange5(KE_total, KE_pred_total, KE_c3,domain,KE_scae,cut='high',showscae=False,save=True):
+    import numpy as np
+    import xarray as xr
+    import matplotlib.pyplot as plt
+    from DataHandling import postprocess
+    u_tau = 0.05
+
+    cm = 1/2.54  # centimeters in inches
+    fig, axs=plt.subplots(1,figsize=([17*cm,7*cm]),sharex=True,sharey=False,constrained_layout=True,dpi=1000)
+
+    test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+
+    #arr1inds = KE_total.isel(time=test_ind).values.argsort() # pick out indexes of sorted ds
+    #plt.plot(np.arange(0,499,1),KE_total.isel(time=test_ind).values[arr1inds[::-1]],color='k')
+    arr1inds = KE_total.values.argsort() # pick out indexes of sorted ds
+    if cut == 'high':
+        arr1inds=arr1inds[-25:]
+    elif cut =='low':
+        arr1inds=arr1inds[0:25]
+    x = np.arange(0,25,1)
+    plt.scatter(x,KE_total.values[arr1inds[::-1]],marker='.',s=50)
+    plt.scatter(x,KE_c3[arr1inds[::-1]]/(u_tau**2),marker='.',s=20)
+    plt.scatter(x,KE_pred_total[arr1inds[::-1]],marker='.',s=20)
+    if showscae == True: 
+        plt.scatter(x,KE_scae[arr1inds[::-1]],marker='.',s=20)
+    plt.ylabel(r'$TKE^{+}$')
+    plt.xticks(x)
+    plt.legend(['DNS','POD','CNNAE','SCAE'])
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/KE5_{}.pdf".format(domain,cut),bbox_inches='tight')
+    abs_error = [np.mean(KE_total.values[arr1inds[::-1]]-KE_c3[arr1inds[::-1]]/(u_tau**2)), np.mean(KE_total.values[arr1inds[::-1]]-KE_pred_total[arr1inds[::-1]]),
+    np.mean(KE_total.values[arr1inds[::-1]]-KE_scae[arr1inds[::-1]])]
+    rel_error =  [x / np.mean(KE_total.values[arr1inds[::-1]]) for x in abs_error]
+    return abs_error, rel_error
 
 def scaemode(comp,name,domain,dim,save=True):
     """"2D slice plot 4 scae mode
@@ -1349,13 +1399,6 @@ def scaemode(comp,name,domain,dim,save=True):
         x, y = np.meshgrid(x, z, indexing='xy')
     
 
-
-    #plt.scatter(x, y,0.1)
-    #segs1 = np.stack((x,y), axis=2)
-    #segs2 = segs1.transpose(1,0,2)
-    #plt.gca().add_collection(LineCollection(segs1))
-    #plt.gca().add_collection(LineCollection(segs2))
-
     time = 100
     #z = ds.isel(time=200,z=16)['u_vel'].values.T
     if dim == 'y':
@@ -1381,23 +1424,200 @@ def scaemode(comp,name,domain,dim,save=True):
     print(max_ax)
     #Mode 1
     pcm=axs[0,0].contourf(x,y,z1,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
-    #axs[0].set_title(name,weight="bold") #title
+    axs[0,0].set_title('Mode 1',weight="bold") #title
     axs[0,0].set_ylabel(r'${}^{{+}}$'.format(dim))
 
     #Mode 2
     axs[1,0].contourf(x,y,z2,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
     axs[1,0].set_xlabel(r'$x^{+}$')
     axs[1,0].set_ylabel(r'${}^{{+}}$'.format(dim))
-
+    axs[1,0].set_title('Mode 2',weight="bold") #title
     #Mode 3
     axs[0,1].contourf(x,y,z3,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
     #axs[2].set_xlabel(r'$x^{+}$')
     #axs[2].set_ylabel(r'${}^{{+}}$'.format(dim))
+    axs[0,1].set_title('Mode 3',weight="bold") #title
 
     #Mode 4
     axs[1,1].contourf(x,y,z4,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
     axs[1,1].set_xlabel(r'$x^{+}$')
     #axs[2].set_ylabel(r'${}^{{+}}$'.format(dim))
+    axs[1,1].set_title('Mode 4',weight="bold") #title
+
+    #Decide which one to use for colorbar
+    if max_ax == 0:
+        pcm=axs[0,0].contourf(x,y,z1,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    elif max_ax == 1:
+        pcm=axs[1,0].contourf(x,y,z2,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    elif max_ax == 2:
+        pcm=axs[0,1].contourf(x,y,z3,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    elif max_ax == 3:
+        pcm=axs[1,1].contourf(x,y,z4,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    
+    pcm = matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(vmin,vmax),cmap='jet')
+
+    #Setting labels and stuff
+    #axs[0,0].text(-0.35, 0.20, 'Mode 1',
+    #        verticalalignment='bottom', horizontalalignment='right',
+    #        transform=axs[0,0].transAxes,rotation=90,weight="bold")
+    #axs[1,0].text(-0.35, 0.20, 'Mode 2',
+    #        verticalalignment='bottom', horizontalalignment='right',
+    #        transform=axs[1,0].transAxes,rotation=90,weight="bold")
+    #axs[0,1].text(-0.08, 0.20, 'Mode 3',
+    #        verticalalignment='bottom', horizontalalignment='right',
+    #        transform=axs[0,1].transAxes,rotation=90,weight="bold")
+    #axs[1,1].text(-0.08, 0.20, 'Mode 4',
+    #        verticalalignment='bottom', horizontalalignment='right',
+    #        transform=axs[1,1].transAxes,rotation=90,weight="bold")
+    #Remove annoying white lines
+    for ax in axs.reshape(-1): 
+        for c in ax.collections:
+            c.set_edgecolor("face")
+    fig.subplots_adjust(hspace=0.35)
+    ticks = np.linspace(vmin, vmax, 5, endpoint=True)
+    cbar=fig.colorbar(pcm,ax=axs[:,:],aspect=30,shrink=0.7,location="bottom",pad=0.2,
+    format="%.2e",spacing='uniform',ticks=ticks)
+    #cbar=fig.colorbar(cax=axs[:],aspect=20,shrink=1.0,location="bottom",pad=0.2)
+    #cbar.formatter.set_powerlimits((0, 0))
+    ticks = np.linspace(vmin, vmax, 5, endpoint=True)
+    #cbar.set_ticks([-5 -2.5, 0.0, 2.5, 5]), cbar.set_ticklabels([-5 -2.5, 0.0, 2.5, 5])
+    print(ticks)
+    #cbar.set_ticks(ticks), cbar.set_ticklabels(ticks)
+    #cbar.ax.set_xlabel(r"$u^{'+}$",rotation=0)
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/scaemode_{}_{}.pdf".format(domain,name,dim),bbox_inches='tight')
+    plt.show()
+
+def errorplot(poderror,cnnaeerror,scaeerror,domain,scae,save=True):
+    """Error plot
+    Args:
+    domain (str): The domain on which the POD has been carried out.
+    scae (list): name of scae domains to determine latent space size
+    Returns:
+
+    """
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from DataHandling import postprocess
+    
+    name = ''
+    modes = 400
+
+    if domain == '1pi':
+        ticks = [3072,384,48]
+    else:
+        ticks = [1536,192,24]
+
+    r0 = postprocess.mediancomp(scae[0])
+    r1 = postprocess.mediancomp(scae[1])
+    r2 = postprocess.mediancomp(scae[2])
+    scaeticks = [r0,r1,r2]
+
+
+    cm = 1/2.54  # centimeters in inches
+    fig, axs=plt.subplots(1,1,figsize=([10*cm,5*cm]),sharex=False,sharey=False,constrained_layout=True,dpi=1000)
+    
+    axs.plot(ticks,poderror,marker='.',lw=0.7,color='k', ms=5)
+
+    axs.plot(ticks,cnnaeerror,marker='.',lw=0.7,color='r', ms=5)
+    axs.plot(scaeticks,scaeerror,marker='.',lw=0.7,color='b', ms=5)
+    
+    axs.grid(True)
+    axs.set_xscale('log', base=10)
+    axs.legend(['POD','CNNAE','SCAE'],prop={'size': 6})
+    
+    #axs[0].set_title(name.capitalize(),weight="bold")
+    axs.set_ylabel(r"$\ell_{{2}}$-error")
+    axs.set_xlabel(r'Latent varibles') 
+    
+
+    #Setting labels and stuff
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/errorplot.pdf".format(domain),bbox_inches='tight')
+    #plt.show()
+
+def uslice4(target,POD,CNNAE,SCAE,name,domain,dim,save=True):
+    """"2D slice plot 4 scae mode
+    Args:
+        comp (array):  
+        names (list): list of the names of the data. Normally train,validaiton,test
+        name (str): name of save
+        ds (xrray): 
+        dim (str): dimension to slice
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.collections import LineCollection
+    import matplotlib 
+    import seaborn as sns
+    import xarray as xr
+    import numpy as np
+    sns.set_theme()
+    sns.set_style("ticks")
+    sns.set_context("paper")
+    ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
+    ds=ds.isel(y=slice(0, 32))
+    #x, y = np.meshgrid(ds['x'].values, ds['y'].values)
+    x = ds['x'].values
+    y = ds['y'].values
+    z = ds['z'].values
+
+    u_tau = 0.05
+    nu = 0.0004545454545
+    
+    x_plus = x*(u_tau/nu)
+    y_plus = abs(y-y.max())*(u_tau/nu) #y_plus
+    z_plus = (z + (-z[0]))*(u_tau/nu)
+    xtitle = r'$x^{+}$'
+    if dim == 'y':
+    #Create meshgrid
+        x, y = np.meshgrid(x_plus, y_plus, indexing='xy')
+    elif dim == 'z':
+        x, y = np.meshgrid(x_plus, z_plus, indexing='xy')
+    
+
+    time = 100 #original
+    time = 491 #KE_max_test
+    time = 11 #KE_min_test
+    if dim == 'y':
+        z1 = target[time,:,:,16,0].T
+        z2 = POD[time,:,:,16,0].T
+        z3 = CNNAE[time,:,:,16,0].T
+        z4 = SCAE[time,:,:,16,0].T
+        print("z+={}".format(z_plus[16]))
+
+    if dim == 'z':
+        z1 = target[time,:,16,:,0].T
+        z2 = POD[time,:,16,:,0].T
+        z3 = CNNAE[time,:,16,:,0].T
+        z4 = SCAE[time,:,16,:,0].T
+        print("y+={}".format(y_plus[16]))
+
+    cm = 1/2.54  # centimeters in inches
+
+    fig, axs=plt.subplots(2,2,figsize=([12*cm,10*cm]),sharex=True,sharey=True,constrained_layout=False,dpi=1000)
+    vmin = min([z1.min(), z2.min(), z3.min(), z4.min()])
+    vmax = max([z1.max(), z2.max(), z3.max(), z4.max()])
+    max_ax = np.argmax([z1.max(), z2.max(), z3.max(), z4.max()]) #if time scale colorbar pcm to the axs containing highest z value
+    print(max_ax)
+    #Mode 1
+    pcm=axs[0,0].contourf(x,y,z1,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    axs[0,0].set_title('Target',weight="bold") #title
+    axs[0,0].set_ylabel(r'${}^{{+}}$'.format(dim))
+
+    #Mode 2
+    axs[1,0].contourf(x,y,z2,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    axs[1,0].set_xlabel(r'$x^{+}$')
+    axs[1,0].set_ylabel(r'${}^{{+}}$'.format(dim))
+    axs[1,0].set_title('POD',weight="bold") #title
+    #Mode 3
+    axs[0,1].contourf(x,y,z3,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+
+    axs[0,1].set_title('CNNAE',weight="bold") #title
+
+    #Mode 4
+    axs[1,1].contourf(x,y,z4,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    axs[1,1].set_xlabel(r'$x^{+}$')
+    axs[1,1].set_title('SCAE',weight="bold") #title
 
     #Decide which one to use for colorbar
     if max_ax == 0:
@@ -1409,32 +1629,22 @@ def scaemode(comp,name,domain,dim,save=True):
     elif max_ax == 3:
         pcm=axs[1,1].contourf(x,y,z4,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
 
-    #pcm = matplotlib.cm.ScalarMappable(cmap='jet')
-    #pcm = matplotlib.contour.ContourSet(axs[:,:],levels=200)
-    #Setting labels and stuff
-    axs[0,0].text(-0.35, 0.20, 'Mode 1',
-            verticalalignment='bottom', horizontalalignment='right',
-            transform=axs[0,0].transAxes,rotation=90,weight="bold")
-    axs[1,0].text(-0.35, 0.20, 'Mode 2',
-            verticalalignment='bottom', horizontalalignment='right',
-            transform=axs[1,0].transAxes,rotation=90,weight="bold")
-    axs[0,1].text(-0.08, 0.20, 'Mode 3',
-            verticalalignment='bottom', horizontalalignment='right',
-            transform=axs[0,1].transAxes,rotation=90,weight="bold")
-    axs[1,1].text(-0.08, 0.20, 'Mode 4',
-            verticalalignment='bottom', horizontalalignment='right',
-            transform=axs[1,1].transAxes,rotation=90,weight="bold")
-    #fig.subplots_adjust(wspace=-0.31,hspace=0.25)
+    pcm = matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(vmin,vmax),cmap='jet')
+    #Remove annoying white lines
+    for ax in axs.reshape(-1): 
+        for c in ax.collections:
+            c.set_edgecolor("face")
+    
+    fig.subplots_adjust(hspace=0.38) 
     ticks = np.linspace(vmin, vmax, 5, endpoint=True)
-    cbar=fig.colorbar(pcm,ax=axs[:,:],aspect=20,shrink=1.0,location="bottom",pad=0.2,
-    format="%.2e",spacing='uniform',ticks=ticks)
-    #cbar=fig.colorbar(cax=axs[:],aspect=20,shrink=1.0,location="bottom",pad=0.2)
+    cbar=fig.colorbar(pcm,ax=axs[:,:],aspect=30,shrink=0.7,location="bottom",pad=0.18,
+    format="%.2f",spacing='uniform',ticks=ticks)
     #cbar.formatter.set_powerlimits((0, 0))
     ticks = np.linspace(vmin, vmax, 5, endpoint=True)
     #cbar.set_ticks([-5 -2.5, 0.0, 2.5, 5]), cbar.set_ticklabels([-5 -2.5, 0.0, 2.5, 5])
     print(ticks)
     #cbar.set_ticks(ticks), cbar.set_ticklabels(ticks)
-    #cbar.ax.set_xlabel(r"$u^{'+}$",rotation=0)
+    cbar.ax.set_xlabel(r"$u^{'+}$",rotation=0)
     if save == True:
-        plt.savefig("/home/au569913/DataHandling/reports/{}/scaemode_{}_{}.pdf".format(domain,name,dim),bbox_inches='tight')
+        plt.savefig("/home/au569913/DataHandling/reports/{}/uslice4_{}_{}.pdf".format(domain,name,dim),bbox_inches='tight')
     plt.show()

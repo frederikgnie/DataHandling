@@ -25,7 +25,7 @@ import importlib
 importlib.reload(POD)
 modes = [1536, 192, 24]
 if domain == '1pi':
-    modes = [3072,284,48]
+    modes = [3072,384,48]
 
 c1,d1 = POD.projectPOD(modes[0],domain)
 
@@ -46,6 +46,7 @@ POD.modeenergyplot(domain)
 # Pick out some modes
 firstmode = u[:,0].reshape(mean_snapshot.shape)
 secondmode =u[:,1].reshape(mean_snapshot.shape)
+seventhmode = u[:,7].reshape(mean_snapshot.shape)
 forteenmode = u[:,14].reshape(mean_snapshot.shape)
 u_vel1=firstmode[:,:,:,0]
 u_vel2=secondmode[:,:,:,0]
@@ -57,6 +58,8 @@ data = u_vel1
 plots.isocon(data,ds,'PODmode1',domain,'uvel')
 data = u_vel2
 plots.isocon(data,ds,'PODmode2',domain,'uvel')
+data = seventhmode[:,:,:,0]
+plots.isocon(data,ds,'PODmode7',domain,'uvel')
 data = forteenmode[:,:,:,0]
 plots.isocon(data,ds,'PODmode14',domain,'uvel')
 
@@ -105,7 +108,3 @@ importlib.reload(postprocess)
 #AE_error = postprocess.errornorm(predctions[0],target_list[0])
 POD_error200 = postprocess.errornorm(c3,test_snap)
 
-#%%
-#S = train_snap.T@ train_snap
-#sigma, V = np.linalg.eig(S) 
-U = train_snap @ V @ np.linalg.inv(sigma)
