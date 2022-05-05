@@ -17,10 +17,10 @@ import matplotlib.pyplot as plt
 from DataHandling.models import predict
 #%% Inputs ###
 tf_records = False
-name = 'dulcet-armadillo-70' #l1=
+name = 'cosmic-feather-29'
 model=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name))
-domain = 'blonigan'
-model_type = 'SCAE'
+domain = 'nakamura'
+model_type = 'CNNAE' 
 
 overwrite=False
 vars=['u_vel','v_vel','w_vel']
@@ -28,8 +28,7 @@ target = ['u_tar','v_tar','w_tar']
 normalize=False
 y_plus=15
 
-
-
+print('Running prediction.py with model: '+ name)
 #%% Thor style
 if tf_records == True:
 

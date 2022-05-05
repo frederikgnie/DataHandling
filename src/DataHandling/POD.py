@@ -76,7 +76,7 @@ def projectPOD(modes,domain):
 #if shapshots is rows first should be transposed. Since my snapshots are coluns we do reverse.
 #C = np.dot(array[:,0:n_snapshots], array[:,0:n_snapshots].T) / n_snapshots
 #%%
-def modeenergyplot(domain):
+def modeenergyplot(domain,domain2=None,save=True):
     """Plot energy and cumulative energy of POD modes (s)
     Args:
     domain (str): The domain on which the POD has been carried out.
@@ -91,18 +91,24 @@ def modeenergyplot(domain):
     
     name = ''
     modes = 400
-    labels = ['DNS',r'$r=1536$',r'$r=192$',r'$r=24$']
+    labels = [r'$L_{z}=0.5\pi$',r'$L_{z}=\pi$']
 
     cm = 1/2.54  # centimeters in inches
     fig, axs=plt.subplots(1,2,figsize=([15*cm,5*cm]),sharex=False,sharey=False,constrained_layout=True,dpi=1000)
     
-    axs[0].plot(range(0,len(s[0:modes])),s[0:modes],marker='.',lw=0.7,color='k', ms=2.5)
+    l0 = axs[0].plot(range(0,len(s[0:modes])),s[0:modes],marker='.',lw=0.7,color='k', ms=2.5, label=labels[0])
     axs[1].plot(range(0,len(s[0:modes])),cum_s[0:modes],marker='.',lw=0.7,color='k', ms=2.5)
     
     axs[0].grid(True)
     axs[1].grid(True)
     axs[0].set_yscale('log', base=10)
-    
+    if domain2 != None:
+            s2 = np.load("/home/au569913/DataHandling/models/POD/{}/s.npy".format(domain2))
+            s2=s2**2 # energy is singular values 
+            cum_s2 = (s2.cumsum()/s2.sum())
+            l1 = axs[0].plot(range(0,len(s2[0:modes])),s2[0:modes],marker='.',lw=0.7,color='r', ms=2.5,label=labels[1])
+            axs[1].plot(range(0,len(s2[0:modes])),cum_s2[0:modes],marker='.',lw=0.7,color='r', ms=2.5)
+            axs[1].legend([r'$L_{z}=0.5\pi$', r'$L_{z}=\pi$'])
     #axs[0].set_title(name.capitalize(),weight="bold")
     axs[0].set_ylabel(r"Energy")
     axs[0].set_xlabel(r'POD mode') 
@@ -111,5 +117,9 @@ def modeenergyplot(domain):
     axs[1].set_xlabel(r'POD mode')
 
     #Setting labels and stuff
-    plt.savefig("/home/au569913/DataHandling/reports/{}/modeenergy.pdf".format(domain),bbox_inches='tight')
+    if save == True:
+        if domain2 != None:
+            plt.savefig("/home/au569913/DataHandling/reports/{}/modeenergy_{}.pdf".format(domain,domain2),bbox_inches='tight')
+        else:
+            plt.savefig("/home/au569913/DataHandling/reports/{}/modeenergy.pdf".format(domain),bbox_inches='tight')
     #plt.show()

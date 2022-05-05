@@ -13,15 +13,15 @@ from wandb.keras import WandbCallback
 from DataHandling.features import preprocess, slices
 from DataHandling import utility
 from DataHandling.models import models
-
+print('Running nakamura.py')
 os.environ['WANDB_DISABLE_CODE']='True'
 
-wandbnotes = "blonigan SCAE2 l1=1e-3"
+wandbnotes = "Nakamura SCAE l1=1e-2 weights: swept-aardvark-95"
 tf_records = False #utilise tf_records aproach or not
 
-batch_size=32
+batch_size = 32
 activation='relu'
-lr = 0.0001
+lr = 0.00001
 optimizer=keras.optimizers.Adam(learning_rate=lr)
 #optimizer=keras.optimizers.SGD(learning_rate=0.00001, momentum=0.8)
 #optimizer=keras.optimizers.RMSprop(learning_rate=0.00001, momentum=0.8)
@@ -30,12 +30,12 @@ loss='mean_squared_error'
 patience = 50
 epochs = 2000
 
-model_type="SCAE2"
-l1 = 1e-3 #l1 norm weighting
+model_type="SCAE"
+l1 = 1e-2   #l1 norm weighting lambda
 plus_fluc = True
-domain = 'blonigan'
+domain = 'nakamura'
 
-#
+
 #y_plus=15
 #repeat=3
 #shuffle=100
@@ -60,6 +60,7 @@ if tf_records == True:
 #%% Load data from xarray approach:
 if tf_records == False:
     import xarray as xr
+    ##From ds approach
     #print('Opening ds')
     #ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
     #ds=ds.isel(y=slice(0, 32)) #Reduce y-dim from 65 to 32 as done by nakamura
@@ -72,19 +73,20 @@ if tf_records == False:
 #
     #train = ds.isel(time = train_ind)
     #validation = ds.isel(time = validation_ind)
-    #test = ds.isel(time = train_ind)
+    #test = ds.isel(time = test_ind)
 #
     ##Convert to np array
     #print('Converting to numpy array')
     #train=np.stack((train['u_vel'].values,train['v_vel'].values,train['w_vel']),axis=-1) #use values to pick data as np array and stack that shit
     #validation = np.stack((validation['u_vel'].values,validation['v_vel'].values,validation['w_vel']),axis=-1)
 
+    ##Load from numpy approach:
     train = np.load("/home/au569913/DataHandling/data/numpy/{}/train.npy".format(domain))
     validation = np.load("/home/au569913/DataHandling/data/numpy/{}/validation.npy".format(domain))
 #%% Model
 print('Building model')
 #model=models.nakamura(var,target,tf_records,activation)
-model=models.scae2(l1, activation='relu')
+model=models.scae(l1, activation='relu',onepi=False)
 
 
 #%% Initialise WandB & run
@@ -128,11 +130,13 @@ early_stopping_cb = keras.callbacks.EarlyStopping(patience=patience,restore_best
 reduce_lr = keras.callbacks.ReduceLROnPlateau(monitor='val_loss', factor=0.1,
                               patience=10, min_lr=0.000001)
 
+## Initialize with old weights   ####
 #name_old='fragrant-flower-71'
 #name_old='fearless-shadow-54'
 #name_old='dandy-bush-79'
-#old=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name_old))
-#model.set_weights(old.get_weights()) 
+name_old = 'swept-aardvark-95'
+old=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name_old))
+model.set_weights(old.get_weights()) 
 
 
 #Model fit

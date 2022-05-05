@@ -15,8 +15,8 @@ name="mild-pine-42" #l1=1e-5
 name = 'fearless-shadow-54' #l1=1e-3
 name = 'fragrant-flower-71' #l1=1
 name = 'northern-capybara-82' #l1=1e2
-
-model_type = 'SCAE'
+name = 'cosmic-feather-29'
+model_type = 'CNNAE'
 model=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name))
 
 #model.summary()
@@ -60,10 +60,12 @@ KE_max_test = KE_total.isel(time=test_ind).argmax().values #index
 
 #Predictions to be scattered if needed
 #KE_pred_total=postprocess.KE_np(predctions[2],ds) #pick out train/val/test
-plots.KE_plot(KE_total,domain,fluc=False,KE_pred=False)
+
+#KE
+plots.KE_plot(KE_total,domain,fluc=False,KE_pred=False,save=True)
 #TKE
 TKE_total=postprocess.KE_ds(preprocess.flucds(ds))/(u_tau**2) #calculate 
-plots.KE_plot(TKE_total,domain,fluc=True,KE_pred=False)
+plots.KE_plot(TKE_total,domain,fluc=True,KE_pred=False,save=True)
 # %% Isocountours  #######
 from DataHandling import postprocess
 from DataHandling import plots
@@ -129,8 +131,67 @@ test_ind_toplot = 1 #30   #test_ind[208]=ind number 30 in time = time 3918
 data = postprocess.Qcrit(target_list[2]*u_tau,ds,test_ind_toplot) # Calc q-criterion
 plots.isocon(data,ds,'Target',domain,'Qcrit',save=True)
 data = postprocess.Qcrit(predctions[2]*u_tau,ds,test_ind_toplot) # Calc q-criterion
-plots.isocon(data,ds,'SCAE prediction',domain,'Qcrit')
-
-
+plots.isocon(data,ds,'SCAE prediction',domain,'Qcrit',save=True)
 
 #%%
+from DataHandling import plots
+import importlib
+importlib.reload(plots)
+comp = np.load('/home/au569913/DataHandling/models/output/{}/comp.npz'.format(name))
+comp = comp['test']
+plots.CNNAEmode(comp,'soft',domain,'z',save=True)
+
+
+#%% Domainerror for all domains
+from DataHandling import plots
+import importlib
+importlib.reload(plots)
+plots.domainerror(save=False)
+# %%
+#Analysis of deviations
+importlib.reload(plots)
+test_ind = np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+u_tau = 0.05
+# Only for test & for reduced domain.  
+#TKE_test=postprocess.KE_ds(preprocess.flucds(ds.isel(time=test_ind)))/(u_tau**2) #calculate
+arr1inds = TKE_test.values.argsort() # pick out indexes of sorted ds
+a=arr1inds[::-1][[0,11,14,19,29,24]] #Badly recreated
+b=arr1inds[::-1][[1,16,9,23,18,13]] # well recreated 
+ind_to_plot = [test_ind[a],test_ind[b]]
+plots.KE_plot(KE_total,domain,fluc=False,KE_pred=ind_to_plot,vlines=True,save=False)
+# %%
+time = ds['time'][ind_to_plot[0]] #Badly recreate
+data = postprocess.Qcrit('ds',ds, time[0].values) # Calc q-criterion
+plots.isocon(data,ds,time[0].values,domain,'Qcrit',save=False)
+
+time = ds['time'][ind_to_plot[1]] #well recreate
+data = postprocess.Qcrit('ds',ds, time[0].values) # Calc q-criterion
+plots.isocon(data,ds,time[0].values,domain,'Qcrit',save=False)
+# %%
+from DataHandling import postprocess
+import importlib
+importlib.reload(postprocess)
+a = postprocess.diss(predctions[2], ds)
+b = postprocess.diss(target_list[2], ds)
+#%%
+importlib.reload(plots)
+u_tau = 0.05
+arr1inds = a.argsort()
+plots.diss_arrangeplot(b, a, a*(u_tau**2),a, domain,showscae=False,save=False)
+plots.diss_arrangeerror(b, a, a*(u_tau**2),a, domain,showscae=False,save=False)
+# %% Isocon for diss
+test_ind = np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+time_to_plot = ds.isel(time=test_ind).coords['time'][arr1inds[0:5]].values
+data = postprocess.Qcrit('ds',ds, time_to_plot[0]) # Calc q-criterion
+plots.isocon(data,ds,time_to_plot[0],domain,'Qcrit',save=False)
+
+#%%
+# %%
+import numpy as np
+from DataHandling import postprocess
+ds_np =np.load("/home/au569913/DataHandling/ds_np.npy") #load if already created
+diss_tar = postprocess.diss(ds_np[0:3000,:,:,:,:], ds)
+
+# %%
+from DataHandling import plots
+plots.KE_plot(diss_tar,domain,fluc=False,KE_pred=False,save=False)

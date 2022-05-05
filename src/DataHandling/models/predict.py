@@ -99,9 +99,10 @@ def predictxr(model_name, model, domain, network):
     #%% Predict
     predctions=[]
     print('<---Predicting now--->')
-    predctions.append(model.predict(train_np,verbose=1))
-    predctions.append(model.predict(valid_np,verbose=1))
-    predctions.append(model.predict(test_np,verbose=1))
+    batch_size = 32
+    predctions.append(model.predict(train_np,verbose=1,batch_size=batch_size))
+    predctions.append(model.predict(valid_np,verbose=1,batch_size=batch_size))
+    predctions.append(model.predict(test_np,verbose=1,batch_size=batch_size))
 
     #Using same targets as features
     target_list = [train_np,valid_np,test_np]
@@ -119,6 +120,14 @@ def predictxr(model_name, model, domain, network):
         comp_train = keras_function([train_np])[0] #shape (499,32,32,32,12)
         comp_valid = keras_function([valid_np])[0] #shape (499,32,32,32,12)
         comp_test = keras_function([test_np])[0] #shape (499,32,32,32,12)
-        
+        np.savez_compressed(os.path.join(output_path,"comp"),train=comp_train,val=comp_valid,test=comp_test)
+    if network == 'CNNAE' and model_name == 'cosmic-feather-29': #Nakamura8
+        keras_function = keras.backend.function([model.input], [model.layers[24].output])
+        #comp_train = keras_function([train_np])[0] #shape ()
+        comp_train = np.zeros(5)
+        comp_valid = np.zeros(5)
+        #comp_valid = keras_function([valid_np])[0] #shape ()
+        comp_test = keras_function([test_np])[0] #shape (499,32,32,32,3)
+
         np.savez_compressed(os.path.join(output_path,"comp"),train=comp_train,val=comp_valid,test=comp_test)
     print("Saved data",flush=True)

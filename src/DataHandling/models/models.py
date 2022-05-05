@@ -1086,13 +1086,16 @@ def nakamura1pi2(input_features, output_features, tf_records, activation='relu')
 
     return autoencoder
 
-def scae(l1, activation='relu'):
+def scae(l1, activation='relu', onepi=False):
     from tensorflow import keras
     import tensorflow as tf
     from keras.layers import Input, Add, Conv3D, MaxPooling3D, UpSampling3D, Reshape, ActivityRegularization
     from keras.models import Model
 
-    input_img = Input(shape=(32,32,32,3))
+    if onepi == True:
+        input_img = Input(shape=(32,32,64,3))
+    else:
+        input_img = Input(shape=(32,32,32,3))
  
     x1 = Conv3D(6, (3,3,3),activation=activation, padding='same')(input_img)
     x1 = Conv3D(9, (3,3,3),activation=activation, padding='same')(x1)
@@ -1106,6 +1109,9 @@ def scae(l1, activation='relu'):
     return autoencoder
 
 def scae2(l1, activation='relu'):
+    """
+    Deep version with 30 latent modes 
+    """
     from tensorflow import keras
     import tensorflow as tf
     from keras.layers import Input, Add, Conv3D, MaxPooling3D, UpSampling3D, Reshape, ActivityRegularization
@@ -1136,5 +1142,58 @@ def scae2(l1, activation='relu'):
     autoencoder = Model(input_img, x_final) #original
     return autoencoder
     
+def scae3(l1, activation='relu'):
+    """
+    Version constructed like Nakamura with 3 different filters sizes and adding
+    """
+    from tensorflow import keras
+    import tensorflow as tf
+    from keras.layers import Input, Add, Conv3D, MaxPooling3D, UpSampling3D, Reshape, ActivityRegularization
+    from keras.models import Model
+    
 
+    #initializer = tf.keras.initializers.Ones()
+    initializer = tf.keras.initializers.HeNormal(seed=None)
+
+    input_img = Input(shape=(32,32,32,3))
+
+    x1 = Conv3D(6, (3,3,3),activation=activation, padding='same', kernel_initializer=initializer)(input_img)
+    x1 = Conv3D(9, (3,3,3),activation=activation, padding='same', kernel_initializer=initializer)(x1)
+    x1 = Conv3D(12, (3,3,3),activation=activation, padding='same', kernel_initializer=initializer)(x1)
+
+    
+    x2 = Conv3D(6, (5,5,5),activation=activation, padding='same', kernel_initializer=initializer)(input_img)
+    x2 = Conv3D(9, (5,5,5),activation=activation, padding='same', kernel_initializer=initializer)(x2)
+    x2 = Conv3D(12, (5,5,5),activation=activation, padding='same', kernel_initializer=initializer)(x2)
+
+    
+    x3 = Conv3D(6, (7,7,7),activation=activation, padding='same', kernel_initializer=initializer)(input_img)
+    x3 = Conv3D(9, (7,7,7),activation=activation, padding='same', kernel_initializer=initializer)(x3)
+    x3 = Conv3D(12, (7,7,7),activation=activation, padding='same', kernel_initializer=initializer)(x3)
+    
+    
+    x = Add()([x1,x2,x3])
+    x = ActivityRegularization(l1=l1)(x)
+
+
+    x1 = Conv3D(9, (3,3,3),activation=activation, padding='same', kernel_initializer=initializer)(x)
+    x1 = Conv3D(6, (3,3,3),activation=activation, padding='same', kernel_initializer=initializer)(x1)
+    x1 = Conv3D(3, (3,3,3),activation=activation, padding='same', kernel_initializer=initializer)(x1)
+    
+
+    x2 = Conv3D(9, (5,5,5),activation=activation, padding='same', kernel_initializer=initializer)(x)
+    x2 = Conv3D(6, (5,5,5),activation=activation, padding='same', kernel_initializer=initializer)(x2)
+    x2 = Conv3D(3, (5,5,5),activation=activation, padding='same', kernel_initializer=initializer)(x2)
+    
+
+    x3 = Conv3D(9, (7,7,7),activation=activation, padding='same', kernel_initializer=initializer)(x)
+    x3 = Conv3D(6, (7,7,7),activation=activation, padding='same', kernel_initializer=initializer)(x3)
+    x3 = Conv3D(3, (7,7,7),activation=activation, padding='same', kernel_initializer=initializer)(x3)
+
+
+    x = Add()([x1,x2,x3])
+    x_final = Conv3D(3, (3,3,3),padding='same')(x)
+    autoencoder = Model(input_img, x_final) #original
+
+    return autoencoder
     

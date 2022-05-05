@@ -1,4 +1,5 @@
 
+
 def threeD_plot(error_val,output_path):
     """3d KDE of the errors
 
@@ -1060,7 +1061,6 @@ def uslice(predctions,target_list,name,domain,dim,save=True):
             transform=axs[1].transAxes,rotation=90,weight="bold")
     fig.subplots_adjust(wspace=-0.31,hspace=0.25)
     cbar=fig.colorbar(pcm,ax=axs[:],aspect=20,shrink=1.0,location="bottom",pad=0.2)
-    #cbar=fig.colorbar(cax=axs[:],aspect=20,shrink=1.0,location="bottom",pad=0.2)
     cbar.formatter.set_powerlimits((0, 0))
     ticks = np.linspace(int(min([z1.min() ,z2.min()])), int(max([z1.max() ,z2.max()])), 5, endpoint=True)
     #cbar.set_ticks([-5 -2.5, 0.0, 2.5, 5]), cbar.set_ticklabels([-5 -2.5, 0.0, 2.5, 5])
@@ -1180,6 +1180,7 @@ def isocon(data,ds,name,domain,type,save=True):
     
     if isinstance(name, str):
         title = name
+        title = None
     else:
         title=r'$t_{{e}}={:.0f}$'.format(name)
         name = 't={:.0f}'.format(name)
@@ -1199,7 +1200,7 @@ def isocon(data,ds,name,domain,type,save=True):
     )
 )
     if save == True:
-        fig.write_image("/home/au569913/DataHandling/reports/{}/{}_isocon.pdf".format(domain,name),format='pdf')
+        fig.write_image("/home/au569913/DataHandling/reports/{}/{}_isocon_{}.pdf".format(domain,name,domain),format='pdf')
     fig.show(renderer="svg")
     #fig.show()
     
@@ -1268,7 +1269,7 @@ def rmsplot(model,target,pred1,pred2,pred3,ds,domain,save=True,scae=[]):
         plt.savefig("/home/au569913/DataHandling/reports/{}/{}_rms_{}.pdf".format(domain,name,domain),bbox_inches='tight')
     #plt.show()
 #%%
-def KE_plot(KE,domain,fluc=False,KE_pred=False,save=True):
+def KE_plot(KE,domain,fluc=False,KE_pred=False,vlines=False,save=True):
     import matplotlib.pyplot as plt
     import xarray as xr
     import numpy as np
@@ -1285,18 +1286,34 @@ def KE_plot(KE,domain,fluc=False,KE_pred=False,save=True):
     axs.grid(True)
     
     if KE_pred != False:
-        test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
-        test_time = KE.coords['time'][test_ind]
+        if vlines == True:
+            time_to_plot = KE.coords['time'][KE_pred[0]]
+            plt.vlines(x = time_to_plot, ymin = min(KE), ymax = max(KE),
+             colors = 'red', label = 'Badly recreated',lw = 0.5)
+            time_to_plot = KE.coords['time'][KE_pred[1]]
+            plt.vlines(x = time_to_plot, ymin = min(KE), ymax = max(KE),
+             colors = 'blue', label = 'intermediate recreated',lw = 0.5)
+            time_to_plot = KE.coords['time'][KE_pred[2]]
+            plt.vlines(x = time_to_plot, ymin = min(KE), ymax = max(KE),
+             colors = 'green', label = 'Well recreated',lw = 0.5)
+        else:
+            test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+            test_time = KE.coords['time'][test_ind]
+    
+            train_ind =np.load("/home/au569913/DataHandling/data/interim/train_ind.npy")
+            train_time = KE.coords['time'][train_ind]
 
-        train_ind =np.load("/home/au569913/DataHandling/data/interim/train_ind.npy")
-        train_time = KE.coords['time'][train_ind]
+            plt.scatter(test_time,KE_pred*(u_tau**2),marker='.')
+    
 
-        plt.scatter(test_time,KE_pred*(u_tau**2),marker='.')
     if save == True:
-        if fluc == False:
-            plt.savefig("/home/au569913/DataHandling/reports/{}/KE_{}.pdf".format(domain,domain),bbox_inches='tight')
-        elif fluc == True:
-            plt.savefig("/home/au569913/DataHandling/reports/{}/TKE_{}.pdf".format(domain,domain),bbox_inches='tight')
+        if vlines == True:
+            plt.savefig("/home/au569913/DataHandling/reports/{}/KE_vlines_{}.pdf".format(domain,domain),bbox_inches='tight')
+        else:
+            if fluc == False:
+                plt.savefig("/home/au569913/DataHandling/reports/{}/KE_{}.pdf".format(domain,domain),bbox_inches='tight')
+            elif fluc == True:
+                plt.savefig("/home/au569913/DataHandling/reports/{}/TKE_{}.pdf".format(domain,domain),bbox_inches='tight')
 
 #%%
 def KE_arrangeplot(KE_total, KE_pred_total, KE_c3, KE_scae,domain,showscae=True,save=True):
@@ -1314,15 +1331,15 @@ def KE_arrangeplot(KE_total, KE_pred_total, KE_c3, KE_scae,domain,showscae=True,
     #arr1inds = KE_total.isel(time=test_ind).values.argsort() # pick out indexes of sorted ds
     #plt.plot(np.arange(0,499,1),KE_total.isel(time=test_ind).values[arr1inds[::-1]],color='k')
     arr1inds = KE_total.values.argsort() # pick out indexes of sorted ds
-    plt.plot(np.arange(0,499,1),KE_total.values[arr1inds[::-1]],color='k')
-    plt.scatter(np.arange(0,499,1),KE_pred_total[arr1inds[::-1]],marker='.',s=8)
-    plt.scatter(np.arange(0,499,1),KE_c3[arr1inds[::-1]]/(u_tau**2),marker='.',s=8)
+    plt.plot(np.arange(0,499,1),KE_total.values[arr1inds[::-1]],lw=2)
+    plt.scatter(np.arange(0,499,1),KE_c3[arr1inds[::-1]]/(u_tau**2),marker='.',s=8,color='C1')
+    plt.scatter(np.arange(0,499,1),KE_pred_total[arr1inds[::-1]],marker='.',s=8,color='C2')
     if showscae == True:
-        plt.scatter(x,KE_scae[arr1inds[::-1]],marker='.',s=8)
+        plt.scatter(np.arange(0,499,1),KE_scae[arr1inds[::-1]],marker='.',s=8,color='C3')
     plt.ylabel(r'$TKE^{+}$')
-    plt.legend(['DNS','CNNAE','POD'])
+    plt.legend(['DNS','POD','CNNAE','SCAE'])
     if save == True:
-        plt.savefig("/home/au569913/DataHandling/reports/{}/KE_arranged.pdf".format(domain),bbox_inches='tight')
+        plt.savefig("/home/au569913/DataHandling/reports/{}/KE_arranged_{}.pdf".format(domain, domain),bbox_inches='tight')
 
 def KE_arrange5(KE_total, KE_pred_total, KE_c3,domain,KE_scae,cut='high',showscae=False,save=True):
     import numpy as np
@@ -1349,11 +1366,16 @@ def KE_arrange5(KE_total, KE_pred_total, KE_c3,domain,KE_scae,cut='high',showsca
     plt.scatter(x,KE_pred_total[arr1inds[::-1]],marker='.',s=20)
     if showscae == True: 
         plt.scatter(x,KE_scae[arr1inds[::-1]],marker='.',s=20)
+    plt.plot(x,KE_total.values[arr1inds[::-1]])
+    plt.plot(x,KE_c3[arr1inds[::-1]]/(u_tau**2))
+    plt.plot(x,KE_pred_total[arr1inds[::-1]])
+    if showscae == True: 
+        plt.plot(x,KE_scae[arr1inds[::-1]])
     plt.ylabel(r'$TKE^{+}$')
     plt.xticks(x)
     plt.legend(['DNS','POD','CNNAE','SCAE'])
     if save == True:
-        plt.savefig("/home/au569913/DataHandling/reports/{}/KE5_{}.pdf".format(domain,cut),bbox_inches='tight')
+        plt.savefig("/home/au569913/DataHandling/reports/{}/KE5_{}_{}.pdf".format(domain,cut,domain),bbox_inches='tight')
     abs_error = [np.mean(KE_total.values[arr1inds[::-1]]-KE_c3[arr1inds[::-1]]/(u_tau**2)), np.mean(KE_total.values[arr1inds[::-1]]-KE_pred_total[arr1inds[::-1]]),
     np.mean(KE_total.values[arr1inds[::-1]]-KE_scae[arr1inds[::-1]])]
     rel_error =  [x / np.mean(KE_total.values[arr1inds[::-1]]) for x in abs_error]
@@ -1363,7 +1385,7 @@ def scaemode(comp,name,domain,dim,save=True):
     """"2D slice plot 4 scae mode
 
     Args:
-        comp (array): 
+        comp (array): compressed space of network shape: (499,32,32,32,12)
         names (list): list of the names of the data. Normally train,validaiton,test
         name (str): name of save
         ds (xrray)
@@ -1397,21 +1419,23 @@ def scaemode(comp,name,domain,dim,save=True):
         x, y = np.meshgrid(x, y, indexing='xy')
     elif dim == 'z':
         x, y = np.meshgrid(x, z, indexing='xy')
-    
+
+    modecontent = comp.sum(axis=0).sum(axis=0).sum(axis=0).sum(axis=0) #shape 12
+    mostcontent = modecontent.argsort()[::-1] #nparray of index of modes with most content (nonzeros)
 
     time = 100
     #z = ds.isel(time=200,z=16)['u_vel'].values.T
     if dim == 'y':
-        z1 = comp[time,:,:,16,0].T
-        z2 = comp[time,:,:,16,1].T
-        z3 = comp[time,:,:,16,2].T
-        z4 = comp[time,:,:,16,3].T
+        z1 = comp[time,:,:,16,mostcontent[0]].T
+        z2 = comp[time,:,:,16,mostcontent[1]].T
+        z3 = comp[time,:,:,16,mostcontent[2]].T
+        z4 = comp[time,:,:,16,mostcontent[3]].T
         
     if dim == 'z':
-        z1 = comp[time,:,16,:,0].T
-        z2 = comp[time,:,16,:,1].T
-        z3 = comp[time,:,16,:,2].T
-        z4 = comp[time,:,16,:,3].T
+        z1 = comp[time,:,16,:,mostcontent[0]].T
+        z2 = comp[time,:,16,:,mostcontent[1]].T
+        z3 = comp[time,:,16,:,mostcontent[2]].T
+        z4 = comp[time,:,16,:,mostcontent[3]].T
         
 
     cm = 1/2.54  # centimeters in inches
@@ -1424,25 +1448,25 @@ def scaemode(comp,name,domain,dim,save=True):
     print(max_ax)
     #Mode 1
     pcm=axs[0,0].contourf(x,y,z1,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
-    axs[0,0].set_title('Mode 1',weight="bold") #title
+    axs[0,0].set_title('Mode {}'.format(mostcontent[0]),weight="bold") #title
     axs[0,0].set_ylabel(r'${}^{{+}}$'.format(dim))
 
     #Mode 2
     axs[1,0].contourf(x,y,z2,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
     axs[1,0].set_xlabel(r'$x^{+}$')
     axs[1,0].set_ylabel(r'${}^{{+}}$'.format(dim))
-    axs[1,0].set_title('Mode 2',weight="bold") #title
+    axs[1,0].set_title('Mode {}'.format(mostcontent[1]),weight="bold") #title
     #Mode 3
     axs[0,1].contourf(x,y,z3,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
     #axs[2].set_xlabel(r'$x^{+}$')
     #axs[2].set_ylabel(r'${}^{{+}}$'.format(dim))
-    axs[0,1].set_title('Mode 3',weight="bold") #title
+    axs[0,1].set_title('Mode {}'.format(mostcontent[2]),weight="bold") #title
 
     #Mode 4
     axs[1,1].contourf(x,y,z4,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
     axs[1,1].set_xlabel(r'$x^{+}$')
     #axs[2].set_ylabel(r'${}^{{+}}$'.format(dim))
-    axs[1,1].set_title('Mode 4',weight="bold") #title
+    axs[1,1].set_title('Mode {}'.format(mostcontent[3]),weight="bold") #title
 
     #Decide which one to use for colorbar
     if max_ax == 0:
@@ -1475,7 +1499,7 @@ def scaemode(comp,name,domain,dim,save=True):
             c.set_edgecolor("face")
     fig.subplots_adjust(hspace=0.35)
     ticks = np.linspace(vmin, vmax, 5, endpoint=True)
-    cbar=fig.colorbar(pcm,ax=axs[:,:],aspect=30,shrink=0.7,location="bottom",pad=0.2,
+    cbar=fig.colorbar(pcm,ax=axs[:,:],aspect=30,shrink=0.7,location="bottom",pad=0.18,
     format="%.2e",spacing='uniform',ticks=ticks)
     #cbar=fig.colorbar(cax=axs[:],aspect=20,shrink=1.0,location="bottom",pad=0.2)
     #cbar.formatter.set_powerlimits((0, 0))
@@ -1517,23 +1541,30 @@ def errorplot(poderror,cnnaeerror,scaeerror,domain,scae,save=True):
     cm = 1/2.54  # centimeters in inches
     fig, axs=plt.subplots(1,1,figsize=([10*cm,5*cm]),sharex=False,sharey=False,constrained_layout=True,dpi=1000)
     
-    axs.plot(ticks,poderror,marker='.',lw=0.7,color='k', ms=5)
+    axs.plot(ticks,poderror,marker='.',lw=0.7,color='C1', ms=5)
 
-    axs.plot(ticks,cnnaeerror,marker='.',lw=0.7,color='r', ms=5)
-    axs.plot(scaeticks,scaeerror,marker='.',lw=0.7,color='b', ms=5)
+    axs.plot(ticks,cnnaeerror,marker='.',lw=0.7,color='C2', ms=5)
+    axs.plot(scaeticks,scaeerror,marker='.',lw=0.7,color='C3', ms=5)
     
+    from matplotlib.ticker import AutoMinorLocator, MultipleLocator
+    minor_locator = AutoMinorLocator(2)
+    axs.yaxis.set_minor_locator(minor_locator)
+    axs.yaxis.set_major_locator(MultipleLocator(0.1))
+
+
     axs.grid(True)
+    axs.grid(which='minor',alpha=0.2)
     axs.set_xscale('log', base=10)
     axs.legend(['POD','CNNAE','SCAE'],prop={'size': 6})
     
     #axs[0].set_title(name.capitalize(),weight="bold")
     axs.set_ylabel(r"$\ell_{{2}}$-error")
-    axs.set_xlabel(r'Latent varibles') 
+    axs.set_xlabel(r'Latent variables') 
     
 
     #Setting labels and stuff
     if save == True:
-        plt.savefig("/home/au569913/DataHandling/reports/{}/errorplot.pdf".format(domain),bbox_inches='tight')
+        plt.savefig("/home/au569913/DataHandling/reports/{}/errorplot_{}.pdf".format(domain,domain),bbox_inches='tight')
     #plt.show()
 
 def uslice4(target,POD,CNNAE,SCAE,name,domain,dim,save=True):
@@ -1576,8 +1607,8 @@ def uslice4(target,POD,CNNAE,SCAE,name,domain,dim,save=True):
     
 
     time = 100 #original
-    time = 491 #KE_max_test
-    time = 11 #KE_min_test
+    #time = 491 #KE_max_test
+    #time = 11 #KE_min_test
     if dim == 'y':
         z1 = target[time,:,:,16,0].T
         z2 = POD[time,:,:,16,0].T
@@ -1648,3 +1679,339 @@ def uslice4(target,POD,CNNAE,SCAE,name,domain,dim,save=True):
     if save == True:
         plt.savefig("/home/au569913/DataHandling/reports/{}/uslice4_{}_{}.pdf".format(domain,name,dim),bbox_inches='tight')
     plt.show()
+
+def domainerror(save=True):
+    """Error plot
+    Args:
+    domain (str): The domain on which the POD has been carried out.
+    scae (list): name of scae domains to determine latent space size
+    Returns:
+
+    """
+    import os
+    from DataHandling.features import slices
+    import shutil
+    import numpy as np
+    from tensorflow import keras
+    from DataHandling import POD
+    from DataHandling import postprocess
+    from DataHandling.features import preprocess
+    import xarray as xr
+    import matplotlib.pyplot as plt
+    
+    cm = 1/2.54  # centimeters in inches
+    fig, axs=plt.subplots(1,1,figsize=([10*cm,5*cm]),sharex=False,sharey=False,constrained_layout=True,dpi=1000)
+    
+    #Define domain
+    domains = ['blonigan','nakamura','1pi']
+    for i in domains:
+        domain = i
+        print('Processing'+' '+domain)
+
+
+        ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
+        ds=ds.isel(y=slice(0, 32)) #Reduce y-dim from 65 to 32 as done by nakamura
+        #%%
+        # Load model prediction/target - # from least to most compressed
+        if domain == 'nakamura':
+            name=["cosmic-feather-29","valiant-river-31","deep-leaf-32"]
+        elif domain == 'blonigan':
+            name=["swift-sky-34","volcanic-gorge-35","generous-flower-36"]
+            scae=["dulcet-armadillo-70","fragrant-flower-71",'dandy-bush-79','northern-capybara-82'] #here 4 
+        elif domain == '1pi':
+            name=["ethereal-snow-37","confused-waterfall-38","noble-wind-39"]
+
+        predlist=[]
+        predscae=[]
+        for i,j in zip(name,scae):
+            model=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(i))
+            pred = np.load('/home/au569913/DataHandling/models/output/{}/predictions.npz'.format(i))
+            predlist.append(pred["test"])
+
+            model=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(j))
+            pred = np.load('/home/au569913/DataHandling/models/output/{}/predictions.npz'.format(j))
+            predscae.append(pred["test"])
+
+        targ = np.load('/home/au569913/DataHandling/models/output/{}/targets.npz'.format(name[0]))   
+
+        target=targ["test"] 
+
+        # %% import POD
+        modes = [1536, 192, 24]
+        if domain == '1pi':
+            modes = [3072,384,48]
+
+        c1,d1 = POD.projectPOD(modes[0],domain)
+        c2,d2 = POD.projectPOD(modes[1],domain)
+        c3,d3 = POD.projectPOD(modes[2],domain)
+        c = [c1,c2,c3]
+        d = [d1,d2,d3]
+        test_snap = np.load("/home/au569913/DataHandling/models/POD/{}/test_snap.npy".format(domain))
+
+        name = ''
+        modes = 400
+
+        if domain == '1pi':
+            ticks = [3072,384,48]
+        else:
+            ticks = [1536,192,24]
+
+        scaeticks = []
+        for i in range(0,3):
+            scaeticks.append(postprocess.mediancomp(scae[i]))
+    
+        CNNAE_error=[]
+        SCAE_error=[]
+        POD_error=[]
+        for i in range(0,3):
+            CNNAE_error.append(postprocess.errornorm(predlist[i],target))
+            if domain=='blonigan':
+                SCAE_error.append(postprocess.errornorm(predscae[i],target))
+            POD_error.append(postprocess.errornorm(c[i],test_snap))
+
+        markerdict = {'blonigan':'o','nakamura':'^','1pi':'s'}
+        axs.plot(ticks,POD_error,marker=markerdict[domain],lw=0.7,color='C1', ms=5,fillstyle='none')
+        axs.plot(ticks,CNNAE_error,marker=markerdict[domain],lw=0.7,color='C2', ms=5, fillstyle='none')
+        #if domain == 'blonigan':
+            #axs.plot(scaeticks,SCAE_error,marker=markerdict[domain],lw=0.7,color='C3', ms=5, fillstyle='none')
+
+    axs.grid(True)
+    axs.set_xscale('log', base=10)
+    axs.legend(['POD','CNNAE','SCAE'], prop={'size': 6})
+    #axs[0].set_title(name.capitalize(),weight="bold")
+    axs.set_ylabel(r"$\ell_{{2}}$-error")
+    axs.set_xlabel(r'Latent varibles') 
+
+
+        #Setting labels and stuff
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/errorplot.pdf".format(domain),bbox_inches='tight')
+    plt.show()
+
+def CNNAEmode(CNNAE,name,domain,dim,save=True):
+    """"2D slice plot 4 CNNAEmode
+    Args:
+        CNNAE (array): cnnae
+        names (list): list of the names of the data. Normally train,validaiton,test
+        name (str): name of save
+        dim (str): dimension to slice
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.collections import LineCollection
+    import matplotlib 
+    import seaborn as sns
+    import xarray as xr
+    import numpy as np
+    sns.set_theme()
+    sns.set_style("ticks")
+    sns.set_context("paper")
+    ds=xr.open_zarr("/home/au569913/DataHandling/data/interim/{}.zarr".format(domain))
+    ds=ds.isel(y=slice(0, 32))
+    #x, y = np.meshgrid(ds['x'].values, ds['y'].values)
+    x = ds['x'].values
+    y = ds['y'].values
+    z = ds['z'].values
+
+    u_tau = 0.05
+    nu = 0.0004545454545
+    
+    x_plus = x*(u_tau/nu)
+    y_plus = abs(y-y.max())*(u_tau/nu) #y_plus
+    z_plus = (z + (-z[0]))*(u_tau/nu)
+
+    x_plus = np.append(x_plus[0:28:4], x_plus[31])
+    y_plus = np.append(y_plus[0:28:4], y_plus[31])
+    z_plus = np.append(z_plus[0:28:4], z_plus[31])
+
+
+    xtitle = r'$x^{+}$'
+    if dim == 'y':
+    #Create meshgrid
+        x, y = np.meshgrid(x_plus, y_plus, indexing='xy')
+    elif dim == 'z':
+        x, y = np.meshgrid(x_plus, z_plus, indexing='xy')
+    
+    mid = 4
+
+    time = 100 #original
+    #time = 491 #KE_max_test
+    #time = 11 #KE_min_test
+    if dim == 'y':
+        z1 = CNNAE[time,:,:,mid,0].T
+        print("z+={}".format(z_plus[mid]))
+
+    if dim == 'z':
+        z1 = CNNAE[time,:,mid,:,0].T
+        print("y+={}".format(y_plus[mid]))
+
+    cm = 1/2.54  # centimeters in inches
+
+    fig, axs=plt.subplots(1,1,figsize=([12*cm,10*cm]),sharex=True,sharey=True,constrained_layout=False,dpi=1000)
+    vmin = min([z1.min()])
+    vmax = max([z1.max()])
+
+    #Mode 1
+    pcm=axs.contourf(x,y,z1,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    axs.set_title('Decoded CNNAE space',weight="bold") #title
+    axs.set_ylabel(r'${}^{{+}}$'.format(dim))
+    axs.set_xlabel(r'$x^{+}$')
+
+
+    pcm = matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(vmin,vmax),cmap='jet')
+    #Remove annoying white lines
+    for c in axs.collections:
+        c.set_edgecolor("face")
+    
+    #fig.subplots_adjust(hspace=0.38) 
+    ticks = np.linspace(vmin, vmax, 5, endpoint=True)
+    cbar=fig.colorbar(pcm,ax=axs,aspect=30,shrink=0.7,orientation="horizontal",pad=0.18,
+    format="%.2f",spacing='uniform',ticks=ticks)
+    #cbar.formatter.set_powerlimits((0, 0))
+    ticks = np.linspace(vmin, vmax, 5, endpoint=True)
+    #cbar.set_ticks([-5 -2.5, 0.0, 2.5, 5]), cbar.set_ticklabels([-5 -2.5, 0.0, 2.5, 5])
+    print(ticks)
+    #cbar.set_ticks(ticks), cbar.set_ticklabels(ticks)
+    cbar.ax.set_xlabel(r"$u^{'+}$",rotation=0)
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/CNNAEmode_{}_{}.pdf".format(domain,name,dim),bbox_inches='tight')
+    plt.show()
+
+def SCAElatent(comp,domain,name,save=True):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    lan_var = []
+    for i in range(len(comp)): #499
+        lan_var.append(np.count_nonzero(comp[i,:,:,:,:])) #last 0/1/2 seems to be the same 18851ish
+    
+    fig = plt.figure()
+    plt.plot(np.arange(0,499,1),lan_var,color='k',lw=0.5) # plot lantent variables
+    plt.xlabel('Test snapshot')
+    plt.ylabel('# of nonzero latent variables')
+    
+    from statistics import mean, median 
+    mean_var = mean(lan_var)
+    median_var = median(lan_var)
+
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/SCAElatent_{}.pdf".format(domain,name),bbox_inches='tight')
+    return median_var
+
+def diss_arrangeplot(KE_total, KE_pred_total, KE_c3, KE_scae,domain,showscae=True,save=True):
+    import numpy as np
+    import xarray as xr
+    import matplotlib.pyplot as plt
+    from DataHandling import postprocess
+    u_tau = 0.05
+
+    cm = 1/2.54  # centimeters in inches
+    fig, axs=plt.subplots(1,figsize=([17*cm,7*cm]),sharex=True,sharey=False,constrained_layout=True,dpi=1000)
+
+    test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+
+    #arr1inds = KE_total.isel(time=test_ind).values.argsort() # pick out indexes of sorted ds
+    #plt.plot(np.arange(0,499,1),KE_total.isel(time=test_ind).values[arr1inds[::-1]],color='k')
+    if type(KE_total) == xr.core.dataset.Dataset:
+        arr1inds = KE_total.values.argsort() # pick out indexes of sorted ds
+        plt.plot(np.arange(0,499,1),KE_total.values[arr1inds[::-1]],lw=2)
+    else: 
+        arr1inds = KE_total.argsort()
+        plt.plot(np.arange(0,499,1),KE_total[arr1inds[::-1]],lw=2)
+
+    plt.scatter(np.arange(0,499,1),KE_c3[arr1inds[::-1]]/(u_tau**2),marker='.',s=8,color='C1')
+    plt.scatter(np.arange(0,499,1),KE_pred_total[arr1inds[::-1]],marker='.',s=8,color='C2')
+    if showscae == True:
+        plt.scatter(np.arange(0,499,1),KE_scae[arr1inds[::-1]],marker='.',s=8,color='C3')
+    plt.ylabel(r'$Dissipation$')
+    plt.legend(['DNS','POD','CNNAE','SCAE'])
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/diss_arranged_{}.pdf".format(domain, domain),bbox_inches='tight')
+
+def diss_arrangeerror(KE_total, KE_pred_total, KE_c3, KE_scae,domain,showscae=True,save=True):
+    import numpy as np
+    import xarray as xr
+    import matplotlib.pyplot as plt
+    from DataHandling import postprocess
+    u_tau = 0.05
+
+    cm = 1/2.54  # centimeters in inches
+    fig, axs=plt.subplots(1,figsize=([17*cm,7*cm]),sharex=True,sharey=False,constrained_layout=True,dpi=1000)
+
+    test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+
+    #arr1inds = KE_total.isel(time=test_ind).values.argsort() # pick out indexes of sorted ds
+    #plt.plot(np.arange(0,499,1),KE_total.isel(time=test_ind).values[arr1inds[::-1]],color='k')
+    if type(KE_total) == xr.core.dataset.Dataset:
+        arr1inds = KE_total.values.argsort() # pick out indexes of sorted ds
+        KE_total = KE_total.values
+    
+    else: 
+        arr1inds = KE_total.argsort()
+    plt.plot(np.arange(0,499,1),KE_total[arr1inds[::-1]]-KE_c3[arr1inds[::-1]]/(u_tau**2),lw=1,color='C1')
+    plt.plot(np.arange(0,499,1),KE_total[arr1inds[::-1]]-KE_pred_total[arr1inds[::-1]],lw=1,color='C2')
+    if showscae == True:
+        plt.plot(np.arange(0,499,1),abs(KE_total[arr1inds[::-1]]-KE_scae[arr1inds[::-1]]),lw=1,color='C3')
+
+
+    plt.ylabel(r'$Dissipation error$')
+    plt.legend(['POD','CNNAE','SCAE'])
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/diss_arrangederror_{}.pdf".format(domain, domain),bbox_inches='tight')
+
+def diss_arrangeplot(KE_total, KE_pred_total, KE_c3, KE_scae,domain,showscae=True,save=True):
+    import numpy as np
+    import xarray as xr
+    import matplotlib.pyplot as plt
+    from DataHandling import postprocess
+    u_tau = 0.05
+
+    cm = 1/2.54  # centimeters in inches
+    fig, axs=plt.subplots(1,figsize=([17*cm,7*cm]),sharex=True,sharey=False,constrained_layout=True,dpi=1000)
+
+    test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+
+    #arr1inds = KE_total.isel(time=test_ind).values.argsort() # pick out indexes of sorted ds
+    #plt.plot(np.arange(0,499,1),KE_total.isel(time=test_ind).values[arr1inds[::-1]],color='k')
+    if type(KE_total) == xr.core.dataset.Dataset:
+        arr1inds = KE_total.values.argsort() # pick out indexes of sorted ds
+        plt.plot(np.arange(0,499,1),KE_total.values[arr1inds[::-1]],lw=2)
+    else: 
+        arr1inds = KE_total.argsort()
+        plt.plot(np.arange(0,499,1),KE_total[arr1inds[::-1]],lw=2)
+
+    plt.scatter(np.arange(0,499,1),KE_c3[arr1inds[::-1]]/(u_tau**2),marker='.',s=8,color='C1')
+    plt.scatter(np.arange(0,499,1),KE_pred_total[arr1inds[::-1]],marker='.',s=8,color='C2')
+    if showscae == True:
+        plt.scatter(np.arange(0,499,1),KE_scae[arr1inds[::-1]],marker='.',s=8,color='C3')
+    plt.ylabel(r'$Dissipation$')
+    plt.legend(['DNS','POD','CNNAE','SCAE'])
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/diss_arranged_{}.pdf".format(domain, domain),bbox_inches='tight')
+
+def TKE_arrangeerror(KE_total, KE_pred_total, KE_c3, KE_scae,domain,showscae=True,save=True):
+    import numpy as np
+    import xarray as xr
+    import matplotlib.pyplot as plt
+    from DataHandling import postprocess
+    u_tau = 0.05
+
+    cm = 1/2.54  # centimeters in inches
+    fig, axs=plt.subplots(1,figsize=([17*cm,7*cm]),sharex=True,sharey=False,constrained_layout=True,dpi=1000)
+
+    test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+
+ 
+    POD_err = abs(KE_total-KE_c3/(u_tau**2))
+    POD_arrange = POD_err.argsort()
+    CNNAE_err = abs(KE_total-KE_pred_total)
+
+    plt.plot(np.arange(0,499,1),POD_err[POD_arrange[::-1]],lw=1,color='C1')
+    plt.plot(np.arange(0,499,1),CNNAE_err[POD_arrange[::-1]],lw=1,color='C2')
+    if showscae == True:
+        SCAE_err=abs(KE_total-KE_scae)
+        plt.plot(np.arange(0,499,1),SCAE_err[POD_arrange[::-1]],lw=1,color='C3')
+
+
+    plt.ylabel(r'$TKE^{+}$ error')
+    plt.legend(['POD','CNNAE','SCAE'])
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/TKE_arrangederror_{}.pdf".format(domain, domain),bbox_inches='tight')

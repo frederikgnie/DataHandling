@@ -385,3 +385,32 @@ def testforconv(ds_np,batch):
 #    ds_mean=ds.mean(dim=('time','x','z'))
 #    mean_np=np.stack((ds_mean['u_vel'].values,ds_mean['v_vel'].values,ds_mean['w_vel']),axis=-1)
 #    np.save("/home/au569913/DataHandling/data/interim/train_ind",meanfield_)
+
+def flucds4tke(ds):
+    #ds=ds-ds.mean(dim=('x','y','z')) #frederik implementation
+    ds=ds.isel(time=i)-ds.mean(dim=('time','x','z'))
+    return ds
+
+def fluc4tke(array):
+    """Calculates fluctuation based on nparray.
+
+    Args:
+        array (nparray): 
+
+    Returns:
+        array (nparray): 
+    """
+    import numpy as np
+    import xarray as xr
+    #Nakamura approach - do whole 
+    #u_mean = array[:,:,:,:,0].mean(axis=3).mean(axis=0).mean(axis=0)
+    #v_mean = array[:,:,:,:,1].mean(axis=3).mean(axis=0).mean(axis=0)
+    #w_mean = array[:,:,:,:,2].mean(axis=3).mean(axis=0).mean(axis=0)
+
+    mean = array.mean(axis=3).mean(axis=0).mean(axis=0)
+
+    fluc = np.zeros(array.shape)
+    for i in range(32):
+        fluc[:,:,i,:,:] = array[:,:,i,:,:]-mean[i,:]
+    
+    return fluc

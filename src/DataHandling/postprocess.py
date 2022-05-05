@@ -58,7 +58,7 @@ def KE_ds(ds):
     # Map all inner product 
     ds = ds.assign(KE=lambda ds: 0.5*(ds['u_vel']*ds['u_vel']+ds['v_vel']*ds['v_vel']+ds['w_vel']*ds['w_vel']))
     ds = ds['KE'] #pick out only KE data array
-    ds =ds.chunk('auto')
+    ds = ds.chunk('auto')
     ds = ds.integrate('y')
     ds = ds.integrate('x')
     ds = ds.integrate('z')
@@ -112,3 +112,51 @@ def mediancomp(name):
     mean_var = mean(lan_var)
     median_var = median(lan_var)
     return median_var
+
+def diss(data_input,ds): 
+    """"Ouputs diss array
+
+    Args:
+        data (nparray): np array of  field - if str 'ds' use ds as data
+        ds (xarray): xarray dataset for determining coordinates
+        snapshot (int): If data is nparray then this is index of snapshot, if 'ds' then time of snapshot
+    """
+    import numpy as np
+    import xarray as xr    
+    coords = ['x','y','z']
+    fields = ['u_vel','v_vel','w_vel']
+    #only one timestep
+    if data_input == 'ds':
+        data=ds #used if working with ds
+        time=len(ds.time)
+    else:
+        data=data_input
+        time=data.shape[0]
+    x = ds.coords['x'].values
+    y = ds.coords['y'].values
+    z = ds.coords['z'].values
+    codict={'x':x,'y':y,'z':z}
+    
+    strtens =np.zeros(shape=(time,len(x),len(y),len(z),3,3))
+    
+    
+    for t in range(time):
+        for i,fi in enumerate(fields):
+            for j,co in enumerate(coords):
+                if data_input == 'ds':
+                    strtens[t,:,:,:,i,j] = data.isel(time=t)[fi].differentiate(co).values
+                else:
+                    strtens[t,:,:,:,i,j] = np.gradient(data[t,:,:,:,i], codict[co], axis=j)
+    print('done strtens')
+    print(strtens.shape)
+    S = 0.5*(strtens+strtens.transpose(0,1,2,3,5,4)) #Transpose strain tensor for all points
+    #A = 0.5*(strtens-strtens.transpose(1,0,2,3,4))
+    nu = 0.0004545454545
+    #S.shape
+    diss = np.trace((nu*(S) @ strtens),axis1=4,axis2=5)
+    print('done diss domain')
+    #integrate
+    diss_total = np.trapz(diss,x, axis=1)
+    diss_total = np.trapz(diss_total,z, axis=2)
+    diss_total = -np.trapz(diss_total,y, axis=1)
+    return diss_total

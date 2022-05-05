@@ -11,6 +11,9 @@ __pycache__/
 # numpy saved arrays
 *.npy
 
+# xarray saved arrays
+*.nc
+
 
 # Distribution / packaging
 .Python
