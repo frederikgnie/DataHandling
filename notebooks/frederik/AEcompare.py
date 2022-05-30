@@ -114,11 +114,10 @@ plots.isocon(data,ds,'SCAE prediction',domain,'Qcrit',save=True)
 # %% Uslice 4
 importlib.reload(plots)
 u_tau=0.05
-plots.uslice4(target,c[2]/u_tau,predlist[2],predscae[2],'hard',domain,'z',save=True)
-plots.uslice4(target,c[2]/u_tau,predlist[2],predscae[2],'hard',domain,'y',save=True)
+plots.uslice4(target,c[2]/u_tau,predlist[2],predscae[1],'hard',domain,'z',save=False)
+plots.uslice4(target,c[2]/u_tau,predlist[2],predscae[1],'hard',domain,'y',save=False)
 
 # %% Dissipation
-# %%
 #from DataHandling import postprocess
 #import importlib
 #importlib.reload(postprocess)
@@ -133,15 +132,18 @@ plots.uslice4(target,c[2]/u_tau,predlist[2],predscae[2],'hard',domain,'y',save=T
 #plots.diss_arrangeerror(diss_tar, diss_CNNAE, diss_POD, diss_SCAE, domain,showscae=True,save=False)
 
 
-# %%
+# %% TKE errors sorted by POD
+save = False
 importlib.reload(plots)
 TKE_total=postprocess.KE_np(target,ds) #calculate 
 TKE_pred_total=postprocess.KE_np(predlist[2],ds)
 TKE_POD = postprocess.KE_np(c[2],ds)
 TKE_SCAE = postprocess.KE_np(predscae[2],ds)
 
-plots.TKE_arrangeerror(TKE_total, TKE_pred_total, TKE_POD, TKE_SCAE, domain, showscae=True,save=True)
-# %%
+plots.TKE_arrangeerror(TKE_total, TKE_pred_total, TKE_POD, TKE_SCAE, domain, showscae=True,save=save)
+plots.errorcorr(TKE_total, TKE_pred_total, TKE_POD, TKE_SCAE, domain, showscae=True, save=save)
+# %% Q-criterion for best, intermediate and worst snapshot
+save = True
 u_tau = 0.05
 POD_err = abs(TKE_total-TKE_POD/(u_tau**2))
 POD_arrange = POD_err.argsort()
@@ -149,22 +151,20 @@ test_ind = np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
 
 time_to_plot = ds.isel(time=test_ind).coords['time'][POD_arrange[-5:]].values
 data = postprocess.Qcrit('ds',ds, time_to_plot[4]) # Calc q-criterion
-plots.isocon(data,ds,time_to_plot[4],domain,'Qcrit',save=True)
+plots.isocon(data,ds,time_to_plot[3],domain,'Qcrit',save=save) #4
 
 time_to_plot = ds.isel(time=test_ind).coords['time'][POD_arrange[245:250]].values
 data = postprocess.Qcrit('ds',ds, time_to_plot[3]) # Calc q-criterion
-plots.isocon(data,ds,time_to_plot[3],domain,'Qcrit',save=True)
+plots.isocon(data,ds,time_to_plot[4],domain,'Qcrit',save=save) #3
 
 time_to_plot = ds.isel(time=test_ind).coords['time'][POD_arrange[0:5]].values
 data = postprocess.Qcrit('ds',ds, time_to_plot[0]) # Calc q-criterion
-plots.isocon(data,ds,time_to_plot[0],domain,'Qcrit',save=True)
+plots.isocon(data,ds,time_to_plot[0],domain,'Qcrit',save=save) #0
 
-# %%
+# %% KE plot with markings 
 importlib.reload(plots)
 KE_total= xr.open_dataarray("KE_{}.nc".format(domain))
 ind_to_plot = [test_ind[POD_arrange[-5:]],test_ind[POD_arrange[245:250]],test_ind[POD_arrange[0:5]]]
-plots.KE_plot(KE_total,domain,fluc=False,KE_pred=ind_to_plot,vlines=True,save=True)
-# %%
-
+plots.KE_plot(KE_total,domain,fluc=False,KE_pred=ind_to_plot,vlines='color',save=True)
 
 # %%

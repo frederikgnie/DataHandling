@@ -16,6 +16,7 @@ name = 'fearless-shadow-54' #l1=1e-3
 name = 'fragrant-flower-71' #l1=1
 name = 'northern-capybara-82' #l1=1e2
 name = 'cosmic-feather-29'
+name = 'swift-sky-34'
 model_type = 'CNNAE'
 model=keras.models.load_model("/home/au569913/DataHandling/models/trained/{}".format(name))
 
@@ -139,7 +140,7 @@ import importlib
 importlib.reload(plots)
 comp = np.load('/home/au569913/DataHandling/models/output/{}/comp.npz'.format(name))
 comp = comp['test']
-plots.CNNAEmode(comp,'soft',domain,'z',save=True)
+plots.CNNAEmode(comp,target_list[2],'soft',domain,'y',save=True)
 
 
 #%% Domainerror for all domains

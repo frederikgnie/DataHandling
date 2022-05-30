@@ -1,5 +1,6 @@
 
 
+
 def threeD_plot(error_val,output_path):
     """3d KDE of the errors
 
@@ -1270,6 +1271,13 @@ def rmsplot(model,target,pred1,pred2,pred3,ds,domain,save=True,scae=[]):
     #plt.show()
 #%%
 def KE_plot(KE,domain,fluc=False,KE_pred=False,vlines=False,save=True):
+    """"Plot Kinetic energy
+
+    Args:
+        KE (xarray): Xarray dataset for coordinates
+        KE_pred (bool): Include scattered predictions
+    """
+
     import matplotlib.pyplot as plt
     import xarray as xr
     import numpy as np
@@ -1286,16 +1294,36 @@ def KE_plot(KE,domain,fluc=False,KE_pred=False,vlines=False,save=True):
     axs.grid(True)
     
     if KE_pred != False:
-        if vlines == True:
+        if vlines == 'color':
+            #maxKE=max(KE).values
             time_to_plot = KE.coords['time'][KE_pred[0]]
             plt.vlines(x = time_to_plot, ymin = min(KE), ymax = max(KE),
              colors = 'red', label = 'Badly recreated',lw = 0.5)
+            plt.text(time_to_plot[3]+75,max(KE)-0.025*max(KE),r'$\it{(c)}$',rotation=0)
             time_to_plot = KE.coords['time'][KE_pred[1]]
             plt.vlines(x = time_to_plot, ymin = min(KE), ymax = max(KE),
              colors = 'blue', label = 'intermediate recreated',lw = 0.5)
+            plt.text(time_to_plot[4]+75,max(KE)-0.025*max(KE),r'$\it{(b)}$',rotation=0)
             time_to_plot = KE.coords['time'][KE_pred[2]]
             plt.vlines(x = time_to_plot, ymin = min(KE), ymax = max(KE),
              colors = 'green', label = 'Well recreated',lw = 0.5)
+            plt.text(time_to_plot[0]+75,max(KE)-0.025*max(KE),r'$\it{(a)}$',rotation=0)
+        elif vlines == 'black':
+            #time_to_plot = KE.sel(time=13056).coords['time']
+            time_to_plot = 13056
+            plt.vlines(x = time_to_plot, ymin = min(KE), ymax = max(KE),
+             colors = 'grey', label = 'a',lw = 1, linestyles='dashed')
+            plt.text(time_to_plot+100,max(KE)-0.025*max(KE),r'$\it{(a)}$',rotation=0)
+            time_to_plot = 3846
+            plt.vlines(x = time_to_plot, ymin = min(KE), ymax = max(KE),
+             colors = 'grey', label = 'b',lw = 1, linestyles='dashed')
+            plt.text(time_to_plot-700,max(KE)-0.025*max(KE),r'$\it{(b)}$',rotation=0)
+            time_to_plot = 4269
+            plt.vlines(x = time_to_plot, ymin = min(KE), ymax = max(KE),
+             colors = 'grey', label = 'c',lw = 1, linestyles='dashed')
+            plt.text(time_to_plot+100,max(KE)-0.025*max(KE),r'$\it{(c)}$',rotation=0)
+
+
         else:
             test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
             test_time = KE.coords['time'][test_ind]
@@ -1307,8 +1335,10 @@ def KE_plot(KE,domain,fluc=False,KE_pred=False,vlines=False,save=True):
     
 
     if save == True:
-        if vlines == True:
+        if vlines == 'color':
             plt.savefig("/home/au569913/DataHandling/reports/{}/KE_vlines_{}.pdf".format(domain,domain),bbox_inches='tight')
+        elif vlines == 'black':
+            plt.savefig("/home/au569913/DataHandling/reports/{}/KE_blacklines_{}.pdf".format(domain,domain),bbox_inches='tight')
         else:
             if fluc == False:
                 plt.savefig("/home/au569913/DataHandling/reports/{}/KE_{}.pdf".format(domain,domain),bbox_inches='tight')
@@ -1338,6 +1368,7 @@ def KE_arrangeplot(KE_total, KE_pred_total, KE_c3, KE_scae,domain,showscae=True,
         plt.scatter(np.arange(0,499,1),KE_scae[arr1inds[::-1]],marker='.',s=8,color='C3')
     plt.ylabel(r'$TKE^{+}$')
     plt.legend(['DNS','POD','CNNAE','SCAE'])
+    #axs.grid(True)
     if save == True:
         plt.savefig("/home/au569913/DataHandling/reports/{}/KE_arranged_{}.pdf".format(domain, domain),bbox_inches='tight')
 
@@ -1374,6 +1405,7 @@ def KE_arrange5(KE_total, KE_pred_total, KE_c3,domain,KE_scae,cut='high',showsca
     plt.ylabel(r'$TKE^{+}$')
     plt.xticks(x)
     plt.legend(['DNS','POD','CNNAE','SCAE'])
+    axs.grid(axis='y')
     if save == True:
         plt.savefig("/home/au569913/DataHandling/reports/{}/KE5_{}_{}.pdf".format(domain,cut,domain),bbox_inches='tight')
     abs_error = [np.mean(KE_total.values[arr1inds[::-1]]-KE_c3[arr1inds[::-1]]/(u_tau**2)), np.mean(KE_total.values[arr1inds[::-1]]-KE_pred_total[arr1inds[::-1]]),
@@ -1625,7 +1657,7 @@ def uslice4(target,POD,CNNAE,SCAE,name,domain,dim,save=True):
 
     cm = 1/2.54  # centimeters in inches
 
-    fig, axs=plt.subplots(2,2,figsize=([12*cm,10*cm]),sharex=True,sharey=True,constrained_layout=False,dpi=1000)
+    fig, axs = plt.subplots(2,2,figsize=([12*cm,10*cm]),sharex=True,sharey=True,constrained_layout=False,dpi=1000)
     vmin = min([z1.min(), z2.min(), z3.min(), z4.min()])
     vmax = max([z1.max(), z2.max(), z3.max(), z4.max()])
     max_ax = np.argmax([z1.max(), z2.max(), z3.max(), z4.max()]) #if time scale colorbar pcm to the axs containing highest z value
@@ -1788,7 +1820,7 @@ def domainerror(save=True):
         plt.savefig("/home/au569913/DataHandling/reports/{}/errorplot.pdf".format(domain),bbox_inches='tight')
     plt.show()
 
-def CNNAEmode(CNNAE,name,domain,dim,save=True):
+def CNNAEmode(CNNAE,target,name,domain,dim,save=True):
     """"2D slice plot 4 CNNAEmode
     Args:
         CNNAE (array): cnnae
@@ -1819,58 +1851,72 @@ def CNNAEmode(CNNAE,name,domain,dim,save=True):
     y_plus = abs(y-y.max())*(u_tau/nu) #y_plus
     z_plus = (z + (-z[0]))*(u_tau/nu)
 
-    x_plus = np.append(x_plus[0:28:4], x_plus[31])
-    y_plus = np.append(y_plus[0:28:4], y_plus[31])
-    z_plus = np.append(z_plus[0:28:4], z_plus[31])
-
+    x_plus2 = np.append(x_plus[0:28:4], x_plus[31])
+    y_plus2 = np.append(y_plus[0:28:4], y_plus[31])
+    z_plus2 = np.append(z_plus[0:28:4], z_plus[31])
 
     xtitle = r'$x^{+}$'
     if dim == 'y':
     #Create meshgrid
         x, y = np.meshgrid(x_plus, y_plus, indexing='xy')
+        x2, y2 = np.meshgrid(x_plus2, y_plus2, indexing='xy')
     elif dim == 'z':
         x, y = np.meshgrid(x_plus, z_plus, indexing='xy')
+        x2, y2 = np.meshgrid(x_plus2, z_plus2, indexing='xy')
     
-    mid = 4
+    mid = 16
+    mid2 = 4
 
     time = 100 #original
     #time = 491 #KE_max_test
     #time = 11 #KE_min_test
     if dim == 'y':
-        z1 = CNNAE[time,:,:,mid,0].T
+        z1 = CNNAE[time,:,:,mid2,0].T
+        z2 = target[time,:,:,mid,0].T
         print("z+={}".format(z_plus[mid]))
 
     if dim == 'z':
-        z1 = CNNAE[time,:,mid,:,0].T
+        z1 = CNNAE[time,:,mid2,:,0].T
+        z2 = target[time,:,mid,:,0].T
         print("y+={}".format(y_plus[mid]))
 
     cm = 1/2.54  # centimeters in inches
 
-    fig, axs=plt.subplots(1,1,figsize=([12*cm,10*cm]),sharex=True,sharey=True,constrained_layout=False,dpi=1000)
+    fig, axs =plt.subplots(1,2,figsize=([16*cm,7*cm]),sharex=False,sharey=True,constrained_layout=False,dpi=1000)
     vmin = min([z1.min()])
     vmax = max([z1.max()])
-
+    #fig.subplots_adjust(hspace=0.38) 
     #Mode 1
-    pcm=axs.contourf(x,y,z1,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
-    axs.set_title('Decoded CNNAE space',weight="bold") #title
-    axs.set_ylabel(r'${}^{{+}}$'.format(dim))
-    axs.set_xlabel(r'$x^{+}$')
+    pcm=axs[0].contourf(x2,y2,z1,levels=200,cmap='jet', vmin=vmin, vmax=vmax)
+    axs[0].set_title('Encoded CNNAE space',weight="bold") #title
+    axs[0].set_ylabel(r'${}^{{+}}$'.format(dim))
+    axs[0].set_xlabel(r'$x^{+}$')
+
+    #Mode 2
+    axs[1].contourf(x,y,z2,levels=200,cmap='jet', vmin=z2.min(), vmax=z2.max())
+    axs[1].set_title('Decoded prediction',weight="bold") #title
+    axs[1].set_xlabel(r'$x^{+}$')
+
 
 
     pcm = matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(vmin,vmax),cmap='jet')
     #Remove annoying white lines
-    for c in axs.collections:
-        c.set_edgecolor("face")
+    for ax in axs:
+        for c in ax.collections:
+            c.set_edgecolor("face")
     
     #fig.subplots_adjust(hspace=0.38) 
     ticks = np.linspace(vmin, vmax, 5, endpoint=True)
-    cbar=fig.colorbar(pcm,ax=axs,aspect=30,shrink=0.7,orientation="horizontal",pad=0.18,
+    cbar=fig.colorbar(pcm,ax=axs[0],aspect=30,shrink=0.7,orientation="horizontal",pad=0.22,
     format="%.2f",spacing='uniform',ticks=ticks)
-    #cbar.formatter.set_powerlimits((0, 0))
-    ticks = np.linspace(vmin, vmax, 5, endpoint=True)
-    #cbar.set_ticks([-5 -2.5, 0.0, 2.5, 5]), cbar.set_ticklabels([-5 -2.5, 0.0, 2.5, 5])
+    
     print(ticks)
-    #cbar.set_ticks(ticks), cbar.set_ticklabels(ticks)
+
+
+    pcm = matplotlib.cm.ScalarMappable(norm=matplotlib.colors.Normalize(z2.min(), z2.max()),cmap='jet')
+    ticks = np.linspace(z2.min(), z2.max(), 5, endpoint=True)
+    cbar=fig.colorbar(pcm,ax=axs[1],aspect=30,shrink=0.7,orientation="horizontal",pad=0.22,
+    format="%.2f",spacing='uniform',ticks=ticks)
     cbar.ax.set_xlabel(r"$u^{'+}$",rotation=0)
     if save == True:
         plt.savefig("/home/au569913/DataHandling/reports/{}/CNNAEmode_{}_{}.pdf".format(domain,name,dim),bbox_inches='tight')
@@ -1884,9 +1930,10 @@ def SCAElatent(comp,domain,name,save=True):
         lan_var.append(np.count_nonzero(comp[i,:,:,:,:])) #last 0/1/2 seems to be the same 18851ish
     
     fig = plt.figure()
-    plt.plot(np.arange(0,499,1),lan_var,color='k',lw=0.5) # plot lantent variables
+    plt.plot(np.arange(0,499,1),lan_var,color='k',lw=0.3) # plot lantent variables
     plt.xlabel('Test snapshot')
     plt.ylabel('# of nonzero latent variables')
+    plt.grid(True)
     
     from statistics import mean, median 
     mean_var = mean(lan_var)
@@ -2010,8 +2057,46 @@ def TKE_arrangeerror(KE_total, KE_pred_total, KE_c3, KE_scae,domain,showscae=Tru
         SCAE_err=abs(KE_total-KE_scae)
         plt.plot(np.arange(0,499,1),SCAE_err[POD_arrange[::-1]],lw=1,color='C3')
 
-
+    axs.grid(True)
     plt.ylabel(r'$TKE^{+}$ error')
     plt.legend(['POD','CNNAE','SCAE'])
     if save == True:
         plt.savefig("/home/au569913/DataHandling/reports/{}/TKE_arrangederror_{}.pdf".format(domain, domain),bbox_inches='tight')
+
+def errorcorr(KE_total, KE_pred_total, KE_c3, KE_scae, domain, showscae=True,save=True):
+    import numpy as np
+    import xarray as xr
+    import matplotlib.pyplot as plt
+    from DataHandling import postprocess
+    u_tau = 0.05
+
+    cm = 1/2.54  # centimeters in inches
+    fig, axs=plt.subplots(1,2,figsize=([17*cm,7*cm]),sharex=False,sharey=True,constrained_layout=True,dpi=1000)
+
+    test_ind =np.load("/home/au569913/DataHandling/data/interim/test_ind.npy")
+
+ 
+    POD_err = abs(KE_total-KE_c3/(u_tau**2))
+    POD_arrange = POD_err.argsort()
+    CNNAE_err = abs(KE_total-KE_pred_total)
+    SCAE_err=abs(KE_total-KE_scae)
+
+    axs[0].scatter(CNNAE_err[POD_arrange[::-1]],POD_err[POD_arrange[::-1]],lw=1,color='C2',s=1)
+    axs[1].scatter(SCAE_err[POD_arrange[::-1]],POD_err[POD_arrange[::-1]],lw=1,color='C3',s=1)
+
+    axs[0].plot(np.array([0,CNNAE_err.max()]),np.array([0,CNNAE_err.max()]),color='k',lw=0.5)
+    axs[1].plot(np.array([0,SCAE_err.max()]),np.array([0,SCAE_err.max()]),color='k',lw=0.5)
+
+    axs[0].set_xlim([0, CNNAE_err.max()])
+    axs[0].set_ylim([0, POD_err.max()])
+    axs[1].set_xlim([0, SCAE_err.max()])
+    axs[1].set_ylim([0, POD_err.max()])
+
+    axs[0].grid(True)
+    axs[1].grid(True)
+
+    axs[0].set_xlabel(r'CNNAE error')
+    axs[0].set_ylabel(r'POD error')
+    axs[1].set_xlabel(r'SCAE error')
+    if save == True:
+        plt.savefig("/home/au569913/DataHandling/reports/{}/errorcorr_{}.pdf".format(domain, domain),bbox_inches='tight')

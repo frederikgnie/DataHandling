@@ -121,7 +121,7 @@ def predictxr(model_name, model, domain, network):
         comp_valid = keras_function([valid_np])[0] #shape (499,32,32,32,12)
         comp_test = keras_function([test_np])[0] #shape (499,32,32,32,12)
         np.savez_compressed(os.path.join(output_path,"comp"),train=comp_train,val=comp_valid,test=comp_test)
-    if network == 'CNNAE' and model_name == 'cosmic-feather-29': #Nakamura8
+    if network == 'CNNAE' and model_name == 'swift-sky-34': #Blonigan8
         keras_function = keras.backend.function([model.input], [model.layers[24].output])
         #comp_train = keras_function([train_np])[0] #shape ()
         comp_train = np.zeros(5)
