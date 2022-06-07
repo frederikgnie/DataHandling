@@ -1,7 +1,7 @@
-Dimensionality reduction of the near minimal turbulent channel unit
+Dimensionality reduction of minimal turbulent channel flows
 ==============================
 
-Dimensionality reduction of the near minimal turbulent channel unit
+Dimensionality reduction of minimal turbulent channel flows
 
 Project Organization
 ------------
